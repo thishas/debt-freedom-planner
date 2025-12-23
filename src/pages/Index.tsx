@@ -146,6 +146,9 @@ const Index = () => {
             plan={activePlan}
             calculationResult={calculationResult}
             onImportDebts={importDebts}
+            accounts={accounts}
+            bills={bills}
+            forecastWindow={forecastWindow}
           />
         )}
       </main>
