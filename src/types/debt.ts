@@ -6,6 +6,23 @@ export type Strategy =
   | 'CUSTOM_HIGHEST_FIRST'
   | 'CUSTOM_LOWEST_FIRST';
 
+export type DebtType = 
+  | 'Credit Card'
+  | 'Auto Loan'
+  | 'Student Loan'
+  | 'Personal Loan'
+  | 'Mortgage'
+  | 'Other';
+
+export const DEBT_TYPES: DebtType[] = [
+  'Credit Card',
+  'Auto Loan',
+  'Student Loan',
+  'Personal Loan',
+  'Mortgage',
+  'Other',
+];
+
 export interface Debt {
   id: string;
   name: string;
@@ -14,7 +31,29 @@ export interface Debt {
   minPayment: number;
   customRank?: number;
   active: boolean;
+  // Metadata fields (not used in calculations)
+  creditLimit?: number | null;
+  type?: DebtType | null;
+  fees?: number | null; // Monthly fees (informational only)
 }
+
+// Helper functions for calculated metadata fields
+export const calculateUtilizationRate = (balance: number, creditLimit: number | null | undefined): number | null => {
+  if (!creditLimit || creditLimit <= 0) return null;
+  return Math.min(Math.round((balance / creditLimit) * 1000) / 10, 100); // Round to 1 decimal, cap at 100%
+};
+
+export const calculateAvailableBalance = (balance: number, creditLimit: number | null | undefined): number | null => {
+  if (!creditLimit || creditLimit <= 0) return null;
+  return Math.max(creditLimit - balance, 0);
+};
+
+export const getUtilizationColor = (rate: number | null): 'green' | 'yellow' | 'red' | null => {
+  if (rate === null) return null;
+  if (rate < 30) return 'green';
+  if (rate <= 70) return 'yellow';
+  return 'red';
+};
 
 export interface Plan {
   id: string;
