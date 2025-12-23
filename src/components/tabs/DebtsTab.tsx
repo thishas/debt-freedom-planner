@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, AlertTriangle, DollarSign } from 'lucide-react';
-import { Debt } from '@/types/debt';
+import { Plus, Edit2, Trash2, AlertTriangle, DollarSign, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { Debt, DEBT_TYPES, DebtType, calculateUtilizationRate, calculateAvailableBalance, getUtilizationColor } from '@/types/debt';
 import { calculateMonthlyInterest, checkInterestOnlyRisk } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
 interface DebtsTabProps {
@@ -38,6 +51,9 @@ interface DebtFormData {
   apr: string;
   minPayment: string;
   customRank: string;
+  creditLimit: string;
+  type: DebtType | '';
+  fees: string;
 }
 
 const initialFormData: DebtFormData = {
@@ -46,6 +62,9 @@ const initialFormData: DebtFormData = {
   apr: '',
   minPayment: '',
   customRank: '',
+  creditLimit: '',
+  type: '',
+  fees: '',
 };
 
 export const DebtsTab = ({
@@ -59,12 +78,21 @@ export const DebtsTab = ({
   const [deleteDebtId, setDeleteDebtId] = useState<string | null>(null);
   const [formData, setFormData] = useState<DebtFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof DebtFormData, string>>>({});
+  const [warnings, setWarnings] = useState<Partial<Record<keyof DebtFormData, string>>>({});
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const totalBalance = debts.reduce((sum, d) => sum + d.balance, 0);
   const totalMinPayments = debts.filter(d => d.active).reduce((sum, d) => sum + d.minPayment, 0);
 
+  // Calculate utilization for form display
+  const formBalance = parseFloat(formData.balance) || 0;
+  const formCreditLimit = parseFloat(formData.creditLimit) || 0;
+  const formUtilization = formCreditLimit > 0 ? calculateUtilizationRate(formBalance, formCreditLimit) : null;
+  const formAvailableBalance = formCreditLimit > 0 ? calculateAvailableBalance(formBalance, formCreditLimit) : null;
+
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof DebtFormData, string>> = {};
+    const newWarnings: Partial<Record<keyof DebtFormData, string>> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
@@ -89,7 +117,23 @@ export const DebtsTab = ({
       newErrors.customRank = 'Must be a number';
     }
 
+    // Credit limit validation
+    const creditLimit = formData.creditLimit ? parseFloat(formData.creditLimit) : null;
+    if (creditLimit !== null && creditLimit < 0) {
+      newErrors.creditLimit = 'Credit limit must be >= 0';
+    }
+    if (creditLimit !== null && !isNaN(balance) && creditLimit < balance) {
+      newWarnings.creditLimit = 'Credit limit is less than balance (over limit)';
+    }
+
+    // Fees validation
+    const fees = formData.fees ? parseFloat(formData.fees) : null;
+    if (fees !== null && fees < 0) {
+      newErrors.fees = 'Fees must be >= 0';
+    }
+
     setErrors(newErrors);
+    setWarnings(newWarnings);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -99,9 +143,12 @@ export const DebtsTab = ({
     const debtData = {
       name: formData.name.trim(),
       balance: parseFloat(formData.balance),
-      apr: parseFloat(formData.apr) / 100, // Convert percentage to decimal
+      apr: parseFloat(formData.apr) / 100,
       minPayment: parseFloat(formData.minPayment),
       customRank: formData.customRank ? parseInt(formData.customRank) : undefined,
+      creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null,
+      type: formData.type || null,
+      fees: formData.fees ? parseFloat(formData.fees) : null,
     };
 
     if (editingDebt) {
@@ -117,6 +164,8 @@ export const DebtsTab = ({
     setEditingDebt(null);
     setFormData(initialFormData);
     setErrors({});
+    setWarnings({});
+    setShowAdvanced(false);
     setIsDialogOpen(true);
   };
 
@@ -125,11 +174,16 @@ export const DebtsTab = ({
     setFormData({
       name: debt.name,
       balance: debt.balance.toString(),
-      apr: (debt.apr * 100).toString(), // Convert decimal to percentage
+      apr: (debt.apr * 100).toString(),
       minPayment: debt.minPayment.toString(),
       customRank: debt.customRank?.toString() || '',
+      creditLimit: debt.creditLimit?.toString() || '',
+      type: debt.type || '',
+      fees: debt.fees?.toString() || '',
     });
     setErrors({});
+    setWarnings({});
+    setShowAdvanced(!!(debt.creditLimit || debt.type || debt.fees));
     setIsDialogOpen(true);
   };
 
@@ -138,6 +192,8 @@ export const DebtsTab = ({
     setEditingDebt(null);
     setFormData(initialFormData);
     setErrors({});
+    setWarnings({});
+    setShowAdvanced(false);
   };
 
   const formatCurrency = (amount: number) => {
@@ -146,6 +202,33 @@ export const DebtsTab = ({
       currency: 'USD',
       minimumFractionDigits: 2,
     }).format(amount);
+  };
+
+  const UtilizationBar = ({ rate }: { rate: number | null }) => {
+    if (rate === null) return null;
+    const color = getUtilizationColor(rate);
+    
+    return (
+      <div className="flex items-center gap-2">
+        <Progress 
+          value={rate} 
+          className={cn(
+            "h-2 flex-1",
+            color === 'green' && '[&>div]:bg-emerald-500',
+            color === 'yellow' && '[&>div]:bg-amber-500',
+            color === 'red' && '[&>div]:bg-red-500'
+          )}
+        />
+        <span className={cn(
+          "text-xs font-mono font-medium",
+          color === 'green' && 'text-emerald-600',
+          color === 'yellow' && 'text-amber-600',
+          color === 'red' && 'text-red-600'
+        )}>
+          {rate.toFixed(1)}%
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -196,6 +279,8 @@ export const DebtsTab = ({
           debts.map((debt) => {
             const monthlyInterest = calculateMonthlyInterest(debt.balance, debt.apr);
             const hasRisk = checkInterestOnlyRisk(debt);
+            const utilization = calculateUtilizationRate(debt.balance, debt.creditLimit);
+            const availableBalance = calculateAvailableBalance(debt.balance, debt.creditLimit);
 
             return (
               <Card
@@ -208,7 +293,14 @@ export const DebtsTab = ({
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base truncate">{debt.name}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-base truncate">{debt.name}</CardTitle>
+                        {debt.type && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            {debt.type}
+                          </span>
+                        )}
+                      </div>
                       {debt.customRank && (
                         <span className="text-xs text-muted-foreground">
                           Rank: {debt.customRank}
@@ -240,6 +332,11 @@ export const DebtsTab = ({
                     <div>
                       <p className="text-muted-foreground text-xs">Balance</p>
                       <p className="font-semibold font-mono">{formatCurrency(debt.balance)}</p>
+                      {availableBalance !== null && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Avail: {formatCurrency(availableBalance)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">APR</p>
@@ -250,11 +347,26 @@ export const DebtsTab = ({
                       <p className="font-semibold font-mono">{formatCurrency(debt.minPayment)}</p>
                     </div>
                   </div>
+
+                  {/* Utilization bar for credit limit debts */}
+                  {utilization !== null && (
+                    <div className="mt-3">
+                      <p className="text-xs text-muted-foreground mb-1">Utilization</p>
+                      <UtilizationBar rate={utilization} />
+                    </div>
+                  )}
+
                   <div className="mt-2 pt-2 border-t border-border">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Monthly Interest</span>
                       <span className="font-mono font-medium">{formatCurrency(monthlyInterest)}</span>
                     </div>
+                    {debt.fees && debt.fees > 0 && (
+                      <div className="flex items-center justify-between text-xs mt-1">
+                        <span className="text-muted-foreground">Monthly Fees (info only)</span>
+                        <span className="font-mono font-medium text-muted-foreground">{formatCurrency(debt.fees)}</span>
+                      </div>
+                    )}
                     {hasRisk && (
                       <div className="flex items-center gap-1 mt-2 text-warning">
                         <AlertTriangle className="w-3 h-3" />
@@ -273,11 +385,12 @@ export const DebtsTab = ({
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-sm mx-4">
+        <DialogContent className="max-w-sm mx-4 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingDebt ? 'Edit Debt' : 'Add New Debt'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Core fields */}
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -354,6 +467,107 @@ export const DebtsTab = ({
                 <p className="text-xs text-destructive">{errors.customRank}</p>
               )}
             </div>
+
+            {/* Advanced/Metadata Fields */}
+            <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between px-0 hover:bg-transparent">
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <CreditCard className="w-4 h-4" />
+                    Additional Details
+                  </span>
+                  {showAdvanced ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="type">Debt Type</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => setFormData({ ...formData, type: value as DebtType })}
+                  >
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Select type..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEBT_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="creditLimit">Credit Limit ($)</Label>
+                  <Input
+                    id="creditLimit"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.creditLimit}
+                    onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
+                    placeholder="Leave empty if N/A"
+                    className={cn(errors.creditLimit && 'border-destructive', warnings.creditLimit && 'border-warning')}
+                  />
+                  {errors.creditLimit && (
+                    <p className="text-xs text-destructive">{errors.creditLimit}</p>
+                  )}
+                  {warnings.creditLimit && !errors.creditLimit && (
+                    <p className="text-xs text-warning">{warnings.creditLimit}</p>
+                  )}
+                </div>
+
+                {/* Auto-calculated fields */}
+                {formCreditLimit > 0 && (
+                  <div className="rounded-lg bg-muted/50 p-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Utilization Rate</span>
+                      <span className={cn(
+                        "font-mono font-medium",
+                        getUtilizationColor(formUtilization) === 'green' && 'text-emerald-600',
+                        getUtilizationColor(formUtilization) === 'yellow' && 'text-amber-600',
+                        getUtilizationColor(formUtilization) === 'red' && 'text-red-600'
+                      )}>
+                        {formUtilization?.toFixed(1)}%
+                      </span>
+                    </div>
+                    <UtilizationBar rate={formUtilization} />
+                    <div className="flex justify-between text-sm pt-1">
+                      <span className="text-muted-foreground">Available Balance</span>
+                      <span className="font-mono font-medium">
+                        {formAvailableBalance !== null ? formatCurrency(formAvailableBalance) : '-'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="fees">Monthly Fees ($)</Label>
+                  <Input
+                    id="fees"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.fees}
+                    onChange={(e) => setFormData({ ...formData, fees: e.target.value })}
+                    placeholder="0.00"
+                    className={cn(errors.fees && 'border-destructive')}
+                  />
+                  {errors.fees && (
+                    <p className="text-xs text-destructive">{errors.fees}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Informational only — not included in payoff calculations
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDialog}>

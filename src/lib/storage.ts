@@ -58,13 +58,16 @@ export const createDefaultPlan = (): Plan => {
 
 // CSV Import/Export
 export const exportDebtsToCSV = (plan: Plan): string => {
-  const headers = ['name', 'balance', 'apr', 'minPayment', 'customRank'];
+  const headers = ['name', 'balance', 'apr', 'minPayment', 'customRank', 'creditLimit', 'type', 'fees'];
   const rows = plan.debts.map(d => [
     `"${d.name}"`,
     d.balance.toString(),
     d.apr.toString(),
     d.minPayment.toString(),
     d.customRank?.toString() || '',
+    d.creditLimit?.toString() || '',
+    d.type ? `"${d.type}"` : '',
+    d.fees?.toString() || '',
   ].join(','));
   
   return [headers.join(','), ...rows].join('\n');
@@ -87,6 +90,9 @@ export const parseDebtsFromCSV = (csv: string): Partial<import('@/types/debt').D
         apr: parseFloat(values[2]) || 0,
         minPayment: parseFloat(values[3]) || 0,
         customRank: values[4] ? parseInt(values[4]) : undefined,
+        creditLimit: values[5] ? parseFloat(values[5]) : null,
+        type: values[6] as import('@/types/debt').DebtType || null,
+        fees: values[7] ? parseFloat(values[7]) : null,
       });
     }
   }
