@@ -23,6 +23,13 @@ export const DEBT_TYPES: DebtType[] = [
   'Other',
 ];
 
+export type FeeFrequency = 'MONTHLY' | 'ANNUAL';
+
+export const FEE_FREQUENCY_LABELS: Record<FeeFrequency, string> = {
+  MONTHLY: 'Monthly',
+  ANNUAL: 'Annual',
+};
+
 export interface Debt {
   id: string;
   name: string;
@@ -34,7 +41,8 @@ export interface Debt {
   // Metadata fields (not used in calculations)
   creditLimit?: number | null;
   type?: DebtType | null;
-  fees?: number | null; // Monthly fees (informational only)
+  feeAmount?: number | null; // Fee amount (informational only)
+  feeFrequency?: FeeFrequency | null; // Fee frequency: MONTHLY or ANNUAL
 }
 
 // Helper functions for calculated metadata fields
