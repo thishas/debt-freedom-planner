@@ -66,6 +66,16 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        strategy: {
+          snowball: "hsl(var(--strategy-snowball))",
+          avalanche: "hsl(var(--strategy-avalanche))",
+          custom: "hsl(var(--strategy-custom))",
+          neutral: "hsl(var(--strategy-neutral))",
+        },
+        "accent-secondary": {
+          DEFAULT: "hsl(var(--accent-secondary))",
+          foreground: "hsl(var(--accent-secondary-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
