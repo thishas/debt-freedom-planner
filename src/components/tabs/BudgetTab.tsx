@@ -339,6 +339,10 @@ export const BudgetTab = ({
   };
 
   const handleLinkDebt = (debtId: string) => {
+    if (debtId === 'none') {
+      setBillLinkedDebtId('');
+      return;
+    }
     const debt = debts.find(d => d.id === debtId);
     if (debt) {
       setBillLinkedDebtId(debtId);
@@ -661,7 +665,7 @@ export const BudgetTab = ({
                           <SelectValue placeholder="Select debt to link" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
                           {debts.map(d => (
                             <SelectItem key={d.id} value={d.id}>
                               {d.name} (Min: {formatCurrency(d.minPayment)})
