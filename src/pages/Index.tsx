@@ -90,7 +90,7 @@ const Index = () => {
         onDeletePlan={deletePlan}
       />
 
-      <main className="px-4 py-4 max-w-lg mx-auto">
+      <main className="px-4 py-6 max-w-lg mx-auto space-y-4">
         {activeTab === 'debts' && activePlan && (
           <DebtsTab
             debts={activePlan.debts}
