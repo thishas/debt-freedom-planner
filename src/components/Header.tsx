@@ -36,23 +36,23 @@ export const Header = ({
   onDeletePlan,
 }: HeaderProps) => {
   return (
-    <header className="sticky top-0 z-40 glass border-b border-border shadow-soft">
+    <header className="sticky top-0 z-40 bg-primary border-b border-primary/80 shadow-soft">
       <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center shadow-glow">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-foreground/15 flex items-center justify-center backdrop-blur-sm">
             <Calculator className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-foreground leading-tight">
-              Debt Reduction
+            <h1 className="text-base font-bold text-primary-foreground leading-tight tracking-tight">
+              TrueBalance Planner
             </h1>
-            <p className="text-xs text-muted-foreground">Calculator</p>
+            <p className="text-xs text-primary-foreground/70">Financial Freedom Tool</p>
           </div>
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1 max-w-[140px]">
+            <Button variant="secondary" size="sm" className="gap-1 max-w-[140px] bg-primary-foreground/15 border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/25">
               <span className="truncate">{activePlan?.name || 'Select Plan'}</span>
               <ChevronDown className="w-4 h-4 shrink-0" />
             </Button>
