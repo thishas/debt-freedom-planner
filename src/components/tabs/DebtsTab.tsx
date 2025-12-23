@@ -1,0 +1,396 @@
+import { useState } from 'react';
+import { Plus, Edit2, Trash2, AlertTriangle, DollarSign } from 'lucide-react';
+import { Debt } from '@/types/debt';
+import { calculateMonthlyInterest, checkInterestOnlyRisk } from '@/lib/calculations';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
+
+interface DebtsTabProps {
+  debts: Debt[];
+  onAddDebt: (debt: Omit<Debt, 'id' | 'active'>) => void;
+  onUpdateDebt: (debtId: string, updates: Partial<Debt>) => void;
+  onDeleteDebt: (debtId: string) => void;
+}
+
+interface DebtFormData {
+  name: string;
+  balance: string;
+  apr: string;
+  minPayment: string;
+  customRank: string;
+}
+
+const initialFormData: DebtFormData = {
+  name: '',
+  balance: '',
+  apr: '',
+  minPayment: '',
+  customRank: '',
+};
+
+export const DebtsTab = ({
+  debts,
+  onAddDebt,
+  onUpdateDebt,
+  onDeleteDebt,
+}: DebtsTabProps) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
+  const [deleteDebtId, setDeleteDebtId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<DebtFormData>(initialFormData);
+  const [errors, setErrors] = useState<Partial<Record<keyof DebtFormData, string>>>({});
+
+  const totalBalance = debts.reduce((sum, d) => sum + d.balance, 0);
+  const totalMinPayments = debts.filter(d => d.active).reduce((sum, d) => sum + d.minPayment, 0);
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<keyof DebtFormData, string>> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    const balance = parseFloat(formData.balance);
+    if (isNaN(balance) || balance < 0) {
+      newErrors.balance = 'Balance must be >= 0';
+    }
+
+    const apr = parseFloat(formData.apr);
+    if (isNaN(apr) || apr < 0 || apr > 100) {
+      newErrors.apr = 'APR must be 0-100%';
+    }
+
+    const minPayment = parseFloat(formData.minPayment);
+    if (isNaN(minPayment) || minPayment < 0) {
+      newErrors.minPayment = 'Min payment must be >= 0';
+    }
+
+    if (formData.customRank && isNaN(parseInt(formData.customRank))) {
+      newErrors.customRank = 'Must be a number';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validateForm()) return;
+
+    const debtData = {
+      name: formData.name.trim(),
+      balance: parseFloat(formData.balance),
+      apr: parseFloat(formData.apr) / 100, // Convert percentage to decimal
+      minPayment: parseFloat(formData.minPayment),
+      customRank: formData.customRank ? parseInt(formData.customRank) : undefined,
+    };
+
+    if (editingDebt) {
+      onUpdateDebt(editingDebt.id, debtData);
+    } else {
+      onAddDebt(debtData);
+    }
+
+    handleCloseDialog();
+  };
+
+  const handleOpenAdd = () => {
+    setEditingDebt(null);
+    setFormData(initialFormData);
+    setErrors({});
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenEdit = (debt: Debt) => {
+    setEditingDebt(debt);
+    setFormData({
+      name: debt.name,
+      balance: debt.balance.toString(),
+      apr: (debt.apr * 100).toString(), // Convert decimal to percentage
+      minPayment: debt.minPayment.toString(),
+      customRank: debt.customRank?.toString() || '',
+    });
+    setErrors({});
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingDebt(null);
+    setFormData(initialFormData);
+    setErrors({});
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <DollarSign className="w-4 h-4" />
+              <span className="text-xs font-medium">Total Balance</span>
+            </div>
+            <p className="text-xl font-bold text-foreground font-mono">
+              {formatCurrency(totalBalance)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-soft">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <DollarSign className="w-4 h-4" />
+              <span className="text-xs font-medium">Min. Payments</span>
+            </div>
+            <p className="text-xl font-bold text-foreground font-mono">
+              {formatCurrency(totalMinPayments)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Add Debt Button */}
+      <Button onClick={handleOpenAdd} className="w-full gap-2 shadow-soft">
+        <Plus className="w-4 h-4" />
+        Add Debt
+      </Button>
+
+      {/* Debts List */}
+      <div className="space-y-3">
+        {debts.length === 0 ? (
+          <Card className="shadow-soft">
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">
+                No debts added yet. Tap "Add Debt" to get started.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          debts.map((debt) => {
+            const monthlyInterest = calculateMonthlyInterest(debt.balance, debt.apr);
+            const hasRisk = checkInterestOnlyRisk(debt);
+
+            return (
+              <Card
+                key={debt.id}
+                className={cn(
+                  'shadow-soft transition-all duration-200',
+                  !debt.active && 'opacity-60'
+                )}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base truncate">{debt.name}</CardTitle>
+                      {debt.customRank && (
+                        <span className="text-xs text-muted-foreground">
+                          Rank: {debt.customRank}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleOpenEdit(debt)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleteDebtId(debt.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground text-xs">Balance</p>
+                      <p className="font-semibold font-mono">{formatCurrency(debt.balance)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">APR</p>
+                      <p className="font-semibold font-mono">{(debt.apr * 100).toFixed(2)}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Min Payment</p>
+                      <p className="font-semibold font-mono">{formatCurrency(debt.minPayment)}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-border">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Monthly Interest</span>
+                      <span className="font-mono font-medium">{formatCurrency(monthlyInterest)}</span>
+                    </div>
+                    {hasRisk && (
+                      <div className="flex items-center gap-1 mt-2 text-warning">
+                        <AlertTriangle className="w-3 h-3" />
+                        <span className="text-xs font-medium">
+                          Payment less than interest - balance will grow!
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-sm mx-4">
+          <DialogHeader>
+            <DialogTitle>{editingDebt ? 'Edit Debt' : 'Add New Debt'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Credit Card"
+                className={cn(errors.name && 'border-destructive')}
+              />
+              {errors.name && (
+                <p className="text-xs text-destructive">{errors.name}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="balance">Balance ($)</Label>
+              <Input
+                id="balance"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.balance}
+                onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
+                placeholder="0.00"
+                className={cn(errors.balance && 'border-destructive')}
+              />
+              {errors.balance && (
+                <p className="text-xs text-destructive">{errors.balance}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="apr">APR (%)</Label>
+              <Input
+                id="apr"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={formData.apr}
+                onChange={(e) => setFormData({ ...formData, apr: e.target.value })}
+                placeholder="0.00"
+                className={cn(errors.apr && 'border-destructive')}
+              />
+              {errors.apr && (
+                <p className="text-xs text-destructive">{errors.apr}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="minPayment">Minimum Payment ($)</Label>
+              <Input
+                id="minPayment"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.minPayment}
+                onChange={(e) => setFormData({ ...formData, minPayment: e.target.value })}
+                placeholder="0.00"
+                className={cn(errors.minPayment && 'border-destructive')}
+              />
+              {errors.minPayment && (
+                <p className="text-xs text-destructive">{errors.minPayment}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customRank">Custom Rank (optional)</Label>
+              <Input
+                id="customRank"
+                type="number"
+                value={formData.customRank}
+                onChange={(e) => setFormData({ ...formData, customRank: e.target.value })}
+                placeholder="1, 2, 3..."
+                className={cn(errors.customRank && 'border-destructive')}
+              />
+              {errors.customRank && (
+                <p className="text-xs text-destructive">{errors.customRank}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDialog}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit}>
+              {editingDebt ? 'Update' : 'Add Debt'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteDebtId} onOpenChange={() => setDeleteDebtId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Debt?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The debt will be permanently removed from your plan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteDebtId) {
+                  onDeleteDebt(deleteDebtId);
+                  setDeleteDebtId(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
