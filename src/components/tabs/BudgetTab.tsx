@@ -144,13 +144,17 @@ const AccountCard = ({
 const BillItemRow = ({
   bill,
   debts,
+  accounts,
   onUpdate,
   onDelete,
+  onEdit,
 }: {
   bill: BillItem;
   debts: Debt[];
+  accounts: BankAccount[];
   onUpdate: (updates: Partial<BillItem>) => void;
   onDelete: () => void;
+  onEdit: () => void;
 }) => {
   const linkedDebt = debts.find(d => d.id === bill.linkedDebtId);
 
@@ -211,6 +215,9 @@ const BillItemRow = ({
       </div>
       <div className="flex items-center gap-2">
         <p className="font-semibold">{formatCurrency(bill.amount)}</p>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+          <Pencil className="w-3.5 h-3.5" />
+        </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
@@ -239,6 +246,7 @@ export const BudgetTab = ({
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [billDialogOpen, setBillDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
+  const [editingBill, setEditingBill] = useState<BillItem | null>(null);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
 
   // Persist view mode
@@ -261,6 +269,10 @@ export const BudgetTab = ({
   const [billAccountId, setBillAccountId] = useState('');
   const [billLinkedDebtId, setBillLinkedDebtId] = useState('');
   const [billAutopay, setBillAutopay] = useState(false);
+  const [billStatus, setBillStatus] = useState<BillStatus>('PLANNED');
+  const [billDueType, setBillDueType] = useState<'day' | 'date'>('day');
+  const [billDueDate, setBillDueDate] = useState('');
+  const [billNotes, setBillNotes] = useState('');
 
   // Generate from debts state
   const [selectedDebts, setSelectedDebts] = useState<string[]>([]);
@@ -283,6 +295,11 @@ export const BudgetTab = ({
     setBillAccountId(accounts[0]?.id || '');
     setBillLinkedDebtId('');
     setBillAutopay(false);
+    setBillStatus('PLANNED');
+    setBillDueType('day');
+    setBillDueDate('');
+    setBillNotes('');
+    setEditingBill(null);
   };
 
   const handleSaveAccount = () => {
@@ -321,21 +338,45 @@ export const BudgetTab = ({
     const amount = parseFloat(billAmount) || 0;
     const dueDay = parseInt(billDueDay) || 1;
     
-    onAddBill({
+    const billData = {
       label: billLabel,
       amount,
-      dueDay: billFrequency === 'MONTHLY' ? Math.min(Math.max(dueDay, 1), 31) : null,
-      dueDate: null,
+      dueDay: billDueType === 'day' ? Math.min(Math.max(dueDay, 1), 31) : null,
+      dueDate: billDueType === 'date' && billDueDate ? billDueDate : null,
       frequency: billFrequency,
       category: billCategory,
       linkedDebtId: billLinkedDebtId || null,
       payFromAccountId: billAccountId,
-      status: 'PLANNED',
+      status: billStatus,
       autopay: billAutopay,
-    });
+      notes: billNotes || null,
+    };
+    
+    if (editingBill) {
+      onUpdateBill(editingBill.id, billData);
+    } else {
+      onAddBill(billData);
+    }
     
     setBillDialogOpen(false);
     resetBillForm();
+  };
+
+  const handleEditBill = (bill: BillItem) => {
+    setEditingBill(bill);
+    setBillLabel(bill.label);
+    setBillAmount(bill.amount.toString());
+    setBillDueDay(bill.dueDay?.toString() || '');
+    setBillDueDate(bill.dueDate || '');
+    setBillDueType(bill.dueDate ? 'date' : 'day');
+    setBillFrequency(bill.frequency);
+    setBillCategory(bill.category);
+    setBillAccountId(bill.payFromAccountId);
+    setBillLinkedDebtId(bill.linkedDebtId || '');
+    setBillAutopay(bill.autopay || false);
+    setBillStatus(bill.status);
+    setBillNotes(bill.notes || '');
+    setBillDialogOpen(true);
   };
 
   const handleLinkDebt = (debtId: string) => {
@@ -630,7 +671,7 @@ export const BudgetTab = ({
             <Dialog open={billDialogOpen} onOpenChange={(open) => {
               setBillDialogOpen(open);
               if (!open) resetBillForm();
-              else if (accounts.length > 0) setBillAccountId(accounts[0].id);
+              else if (accounts.length > 0 && !editingBill) setBillAccountId(accounts[0].id);
             }}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" className="gap-1" disabled={accounts.length === 0}>
@@ -638,14 +679,16 @@ export const BudgetTab = ({
                   Add Bill
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Add Bill / Payment</DialogTitle>
+                  <DialogTitle>{editingBill ? 'Edit Bill / Payment' : 'Add Bill / Payment'}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Pay From Account *</Label>
-                    <Select value={billAccountId} onValueChange={setBillAccountId}>
+                    <Select value={billAccountId} onValueChange={(v) => {
+                      setBillAccountId(v);
+                    }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select account" />
                       </SelectTrigger>
@@ -655,12 +698,17 @@ export const BudgetTab = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    {editingBill && billAccountId !== editingBill.payFromAccountId && (
+                      <p className="text-xs text-muted-foreground">
+                        This payment will now be deducted from {accounts.find(a => a.id === billAccountId)?.name}.
+                      </p>
+                    )}
                   </div>
                   
                   {debts.length > 0 && (
                     <div className="space-y-2">
                       <Label>Link to Debt (Optional)</Label>
-                      <Select value={billLinkedDebtId} onValueChange={handleLinkDebt}>
+                      <Select value={billLinkedDebtId || 'none'} onValueChange={handleLinkDebt}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select debt to link" />
                         </SelectTrigger>
@@ -673,6 +721,11 @@ export const BudgetTab = ({
                           ))}
                         </SelectContent>
                       </Select>
+                      {billLinkedDebtId && (
+                        <p className="text-xs text-muted-foreground">
+                          Editing amount here does not change the debt's payoff calculation.
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -691,11 +744,41 @@ export const BudgetTab = ({
                       <Input
                         type="number"
                         step="0.01"
+                        min="0"
                         value={billAmount}
                         onChange={(e) => setBillAmount(e.target.value)}
                         placeholder="0.00"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select value={billStatus} onValueChange={(v) => setBillStatus(v as BillStatus)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PLANNED">Planned</SelectItem>
+                          <SelectItem value="PAID">Paid</SelectItem>
+                          <SelectItem value="SKIPPED">Skipped</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Due Type</Label>
+                    <Select value={billDueType} onValueChange={(v) => setBillDueType(v as 'day' | 'date')}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="day">Monthly (Day of Month)</SelectItem>
+                        <SelectItem value="date">Exact Date</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {billDueType === 'day' ? (
                     <div className="space-y-2">
                       <Label>Due Day (1-31)</Label>
                       <Input
@@ -707,7 +790,16 @@ export const BudgetTab = ({
                         placeholder="1"
                       />
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>Due Date</Label>
+                      <Input
+                        type="date"
+                        value={billDueDate}
+                        onChange={(e) => setBillDueDate(e.target.value)}
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -745,13 +837,22 @@ export const BudgetTab = ({
                     />
                     <Label htmlFor="autopay" className="text-sm">Autopay enabled</Label>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>Notes</Label>
+                    <Input
+                      value={billNotes}
+                      onChange={(e) => setBillNotes(e.target.value)}
+                      placeholder="Optional notes..."
+                    />
+                  </div>
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
                     <Button variant="outline">Cancel</Button>
                   </DialogClose>
                   <Button onClick={handleSaveBill} disabled={!billLabel || !billAmount || !billAccountId}>
-                    Add Bill
+                    {editingBill ? 'Save Changes' : 'Add Bill'}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -792,8 +893,10 @@ export const BudgetTab = ({
                           key={bill.id}
                           bill={bill}
                           debts={debts}
+                          accounts={accounts}
                           onUpdate={(updates) => onUpdateBill(bill.id, updates)}
                           onDelete={() => onDeleteBill(bill.id)}
+                          onEdit={() => handleEditBill(bill)}
                         />
                       ))}
                     </div>
