@@ -58,7 +58,7 @@ export const createDefaultPlan = (): Plan => {
 
 // CSV Import/Export
 export const exportDebtsToCSV = (plan: Plan): string => {
-  const headers = ['name', 'balance', 'apr', 'minPayment', 'customRank', 'creditLimit', 'type', 'fees'];
+  const headers = ['name', 'balance', 'apr', 'minPayment', 'customRank', 'creditLimit', 'type', 'feeAmount', 'feeFrequency'];
   const rows = plan.debts.map(d => [
     `"${d.name}"`,
     d.balance.toString(),
@@ -67,7 +67,8 @@ export const exportDebtsToCSV = (plan: Plan): string => {
     d.customRank?.toString() || '',
     d.creditLimit?.toString() || '',
     d.type ? `"${d.type}"` : '',
-    d.fees?.toString() || '',
+    d.feeAmount?.toString() || '',
+    d.feeFrequency || '',
   ].join(','));
   
   return [headers.join(','), ...rows].join('\n');
@@ -84,6 +85,9 @@ export const parseDebtsFromCSV = (csv: string): Partial<import('@/types/debt').D
     const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
     
     if (values.length >= 4) {
+      const feeFrequencyValue = values[8]?.toUpperCase();
+      const validFeeFrequency = feeFrequencyValue === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
+      
       debts.push({
         name: values[0] || `Debt ${i}`,
         balance: parseFloat(values[1]) || 0,
@@ -92,7 +96,8 @@ export const parseDebtsFromCSV = (csv: string): Partial<import('@/types/debt').D
         customRank: values[4] ? parseInt(values[4]) : undefined,
         creditLimit: values[5] ? parseFloat(values[5]) : null,
         type: values[6] as import('@/types/debt').DebtType || null,
-        fees: values[7] ? parseFloat(values[7]) : null,
+        feeAmount: values[7] ? parseFloat(values[7]) : null,
+        feeFrequency: values[7] ? validFeeFrequency : null,
       });
     }
   }

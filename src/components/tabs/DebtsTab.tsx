@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Edit2, Trash2, AlertTriangle, DollarSign, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
-import { Debt, DEBT_TYPES, DebtType, calculateUtilizationRate, calculateAvailableBalance, getUtilizationColor } from '@/types/debt';
+import { Debt, DEBT_TYPES, DebtType, FeeFrequency, FEE_FREQUENCY_LABELS, calculateUtilizationRate, calculateAvailableBalance, getUtilizationColor } from '@/types/debt';
 import { calculateMonthlyInterest, checkInterestOnlyRisk } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +53,8 @@ interface DebtFormData {
   customRank: string;
   creditLimit: string;
   type: DebtType | '';
-  fees: string;
+  feeAmount: string;
+  feeFrequency: FeeFrequency;
 }
 
 const initialFormData: DebtFormData = {
@@ -64,7 +65,8 @@ const initialFormData: DebtFormData = {
   customRank: '',
   creditLimit: '',
   type: '',
-  fees: '',
+  feeAmount: '',
+  feeFrequency: 'MONTHLY',
 };
 
 export const DebtsTab = ({
@@ -127,9 +129,9 @@ export const DebtsTab = ({
     }
 
     // Fees validation
-    const fees = formData.fees ? parseFloat(formData.fees) : null;
-    if (fees !== null && fees < 0) {
-      newErrors.fees = 'Fees must be >= 0';
+    const feeAmount = formData.feeAmount ? parseFloat(formData.feeAmount) : null;
+    if (feeAmount !== null && feeAmount < 0) {
+      newErrors.feeAmount = 'Fee amount must be >= 0';
     }
 
     setErrors(newErrors);
@@ -148,7 +150,8 @@ export const DebtsTab = ({
       customRank: formData.customRank ? parseInt(formData.customRank) : undefined,
       creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null,
       type: formData.type || null,
-      fees: formData.fees ? parseFloat(formData.fees) : null,
+      feeAmount: formData.feeAmount ? parseFloat(formData.feeAmount) : null,
+      feeFrequency: formData.feeAmount ? formData.feeFrequency : null,
     };
 
     if (editingDebt) {
@@ -179,11 +182,12 @@ export const DebtsTab = ({
       customRank: debt.customRank?.toString() || '',
       creditLimit: debt.creditLimit?.toString() || '',
       type: debt.type || '',
-      fees: debt.fees?.toString() || '',
+      feeAmount: debt.feeAmount?.toString() || '',
+      feeFrequency: debt.feeFrequency || 'MONTHLY',
     });
     setErrors({});
     setWarnings({});
-    setShowAdvanced(!!(debt.creditLimit || debt.type || debt.fees));
+    setShowAdvanced(!!(debt.creditLimit || debt.type || debt.feeAmount));
     setIsDialogOpen(true);
   };
 
@@ -361,10 +365,21 @@ export const DebtsTab = ({
                       <span className="text-muted-foreground">Monthly Interest</span>
                       <span className="font-mono font-medium">{formatCurrency(monthlyInterest)}</span>
                     </div>
-                    {debt.fees && debt.fees > 0 && (
+                    {debt.feeAmount && debt.feeAmount > 0 && (
                       <div className="flex items-center justify-between text-xs mt-1">
-                        <span className="text-muted-foreground">Monthly Fees (info only)</span>
-                        <span className="font-mono font-medium text-muted-foreground">{formatCurrency(debt.fees)}</span>
+                        <span className="text-muted-foreground">
+                          {debt.feeFrequency === 'ANNUAL' ? 'Annual' : 'Monthly'} Fees (info only)
+                        </span>
+                        <div className="text-right">
+                          <span className="font-mono font-medium text-muted-foreground">
+                            {formatCurrency(debt.feeAmount)}
+                          </span>
+                          {debt.feeFrequency === 'ANNUAL' && (
+                            <span className="text-muted-foreground/70 ml-1">
+                              ≈ {formatCurrency(debt.feeAmount / 12)}/mo
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
                     {hasRisk && (
@@ -548,22 +563,41 @@ export const DebtsTab = ({
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="fees">Monthly Fees ($)</Label>
-                  <Input
-                    id="fees"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.fees}
-                    onChange={(e) => setFormData({ ...formData, fees: e.target.value })}
-                    placeholder="0.00"
-                    className={cn(errors.fees && 'border-destructive')}
-                  />
-                  {errors.fees && (
-                    <p className="text-xs text-destructive">{errors.fees}</p>
+                  <Label htmlFor="feeAmount">Fees</Label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        id="feeAmount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.feeAmount}
+                        onChange={(e) => setFormData({ ...formData, feeAmount: e.target.value })}
+                        placeholder="0.00"
+                        className={cn(errors.feeAmount && 'border-destructive')}
+                      />
+                    </div>
+                    <Select
+                      value={formData.feeFrequency}
+                      onValueChange={(value) => setFormData({ ...formData, feeFrequency: value as FeeFrequency })}
+                    >
+                      <SelectTrigger className="w-28 bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(FEE_FREQUENCY_LABELS) as FeeFrequency[]).map((freq) => (
+                          <SelectItem key={freq} value={freq}>
+                            {FEE_FREQUENCY_LABELS[freq]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {errors.feeAmount && (
+                    <p className="text-xs text-destructive">{errors.feeAmount}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Informational only — not included in payoff calculations
+                    Informational only — fees are not included in payoff calculations
                   </p>
                 </div>
               </CollapsibleContent>
