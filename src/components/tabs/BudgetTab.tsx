@@ -438,44 +438,46 @@ export const BudgetTab = ({
   const totalAvailable = totalBalance - totalUpcoming;
 
   return (
-    <div className="space-y-6">
-      {/* Summary Header with View Toggle */}
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium">View</span>
-            <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as BudgetViewMode)}>
-              <ToggleGroupItem value="list" aria-label="List view" className="gap-1.5">
-                <List className="h-4 w-4" />
-                <span className="hidden sm:inline">List</span>
-              </ToggleGroupItem>
-              <ToggleGroupItem value="calendar" aria-label="Calendar view" className="gap-1.5">
-                <CalendarDays className="h-4 w-4" />
-                <span className="hidden sm:inline">Calendar</span>
-              </ToggleGroupItem>
-            </ToggleGroup>
+    <div className="space-y-6 animate-fade-in">
+      {/* Hero Summary Section */}
+      <div className="gradient-hero rounded-2xl p-5 shadow-hero inner-glow">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-primary-foreground">Budget Overview</h2>
+            <p className="text-sm text-primary-foreground/70">Track your cash flow</p>
           </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-xs text-muted-foreground">Total Balance</p>
-              <p className="text-lg font-bold">{formatCurrency(totalBalance)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Upcoming</p>
-              <p className="text-lg font-bold text-warning">{formatCurrency(totalUpcoming)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Available</p>
-              <p className={cn(
-                "text-lg font-bold",
-                totalAvailable < 0 ? "text-destructive" : "text-success"
-              )}>
-                {formatCurrency(totalAvailable)}
-              </p>
-            </div>
+          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as BudgetViewMode)} className="bg-primary-foreground/10 rounded-xl p-1">
+            <ToggleGroupItem value="list" aria-label="List view" className="gap-1.5 data-[state=on]:bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground">
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs">List</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="calendar" aria-label="Calendar view" className="gap-1.5 data-[state=on]:bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground">
+              <CalendarDays className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs">Calendar</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Total Balance</p>
+            <p className="text-lg font-bold text-primary-foreground">{formatCurrency(totalBalance)}</p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Upcoming</p>
+            <p className="text-lg font-bold text-primary-foreground">{formatCurrency(totalUpcoming)}</p>
+          </div>
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Available</p>
+            <p className={cn(
+              "text-lg font-bold",
+              totalAvailable < 0 ? "text-destructive" : "text-primary-foreground"
+            )}>
+              {formatCurrency(totalAvailable)}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Calendar View */}
       {viewMode === 'calendar' ? (

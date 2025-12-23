@@ -7,7 +7,7 @@
 @layer base {
   :root {
     /* Brand Colors - TrueBalance Planner */
-    --background: 210 20% 98%; /* Off-white #F9FAFB */
+    --background: 210 25% 97%; /* Slightly tinted off-white */
     --foreground: 220 20% 20%; /* Dark Slate #1F2937 */
 
     --card: 0 0% 100%; /* White #FFFFFF */
@@ -20,24 +20,28 @@
     --primary: 173 78% 26%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary */
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 220 20% 20%;
+    /* Secondary: Cyan accent */
+    --secondary: 192 70% 95%;
+    --secondary-foreground: 192 80% 25%;
 
     /* Muted: Gray #6B7280 */
-    --muted: 210 20% 96%;
+    --muted: 210 20% 94%;
     --muted-foreground: 218 11% 46%;
 
     /* Accent: Soft Mint #5EEAD4 */
     --accent: 168 76% 64%;
     --accent-foreground: 173 78% 20%;
 
+    /* Secondary Accent: Cyan/Blue */
+    --accent-secondary: 192 80% 50%;
+    --accent-secondary-foreground: 0 0% 100%;
+
     /* Destructive: Soft Red #EF4444 */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     /* Success: Green */
-    --success: 142 70% 40%;
+    --success: 152 70% 40%;
     --success-foreground: 0 0% 100%;
 
     /* Warning: Amber #F59E0B */
@@ -52,10 +56,16 @@
 
     /* Chart colors */
     --chart-1: 173 78% 26%;
-    --chart-2: 142 70% 40%;
+    --chart-2: 152 70% 40%;
     --chart-3: 38 92% 50%;
     --chart-4: 0 84% 60%;
     --chart-5: 262 80% 50%;
+
+    /* Strategy colors */
+    --strategy-snowball: 152 70% 45%;
+    --strategy-avalanche: 200 80% 50%;
+    --strategy-custom: 262 70% 55%;
+    --strategy-neutral: 218 15% 55%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -71,41 +81,50 @@
   }
 
   .dark {
-    --background: 220 20% 8%;
+    --background: 220 25% 7%;
     --foreground: 210 20% 98%;
 
-    --card: 220 18% 12%;
+    --card: 220 20% 11%;
     --card-foreground: 210 20% 98%;
 
-    --popover: 220 18% 12%;
+    --popover: 220 20% 11%;
     --popover-foreground: 210 20% 98%;
 
     /* Primary: Lighter teal for dark mode */
     --primary: 173 60% 45%;
     --primary-foreground: 220 20% 8%;
 
-    --secondary: 220 18% 18%;
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 192 50% 15%;
+    --secondary-foreground: 192 70% 70%;
 
-    --muted: 220 18% 18%;
+    --muted: 220 20% 15%;
     --muted-foreground: 218 11% 60%;
 
     /* Accent: Soft Mint adjusted for dark */
     --accent: 168 50% 25%;
     --accent-foreground: 168 76% 70%;
 
+    --accent-secondary: 192 70% 40%;
+    --accent-secondary-foreground: 0 0% 100%;
+
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 60% 45%;
+    --success: 152 60% 45%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 80% 55%;
     --warning-foreground: 38 80% 10%;
 
-    --border: 220 18% 22%;
-    --input: 220 18% 22%;
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
     --ring: 173 60% 45%;
+
+    /* Strategy colors - dark mode */
+    --strategy-snowball: 152 60% 40%;
+    --strategy-avalanche: 200 70% 45%;
+    --strategy-custom: 262 60% 50%;
+    --strategy-neutral: 218 15% 50%;
 
     --sidebar-background: 220 20% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -146,6 +165,25 @@
     @apply bg-card/95 backdrop-blur-md;
   }
 
+  /* Hero gradient - main brand gradient */
+  .gradient-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(173 78% 26%) 0%,
+      hsl(168 70% 40%) 50%,
+      hsl(192 70% 50%) 100%
+    );
+  }
+
+  .gradient-hero-subtle {
+    background: linear-gradient(
+      135deg,
+      hsl(173 78% 26% / 0.08) 0%,
+      hsl(168 70% 45% / 0.06) 50%,
+      hsl(192 70% 50% / 0.04) 100%
+    );
+  }
+
   /* Gradients using brand colors */
   .gradient-primary {
     background: linear-gradient(135deg, hsl(173 78% 26%) 0%, hsl(173 78% 35%) 100%);
@@ -156,11 +194,69 @@
   }
 
   .gradient-success {
-    background: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(142 70% 50%) 100%);
+    background: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(152 70% 50%) 100%);
   }
 
   .gradient-warning {
     background: linear-gradient(135deg, hsl(var(--warning)) 0%, hsl(38 92% 60%) 100%);
+  }
+
+  /* Gradient cards */
+  .gradient-card-teal {
+    background: linear-gradient(
+      145deg,
+      hsl(173 78% 26% / 0.06) 0%,
+      hsl(168 70% 45% / 0.03) 100%
+    );
+  }
+
+  .gradient-card-mint {
+    background: linear-gradient(
+      145deg,
+      hsl(168 76% 64% / 0.12) 0%,
+      hsl(152 70% 45% / 0.06) 100%
+    );
+  }
+
+  .gradient-card-cyan {
+    background: linear-gradient(
+      145deg,
+      hsl(192 80% 50% / 0.08) 0%,
+      hsl(200 70% 55% / 0.04) 100%
+    );
+  }
+
+  /* Strategy-specific gradients */
+  .gradient-snowball {
+    background: linear-gradient(
+      135deg,
+      hsl(152 70% 45% / 0.1) 0%,
+      hsl(168 76% 64% / 0.05) 100%
+    );
+  }
+
+  .gradient-avalanche {
+    background: linear-gradient(
+      135deg,
+      hsl(200 80% 50% / 0.1) 0%,
+      hsl(192 70% 55% / 0.05) 100%
+    );
+  }
+
+  .gradient-custom {
+    background: linear-gradient(
+      135deg,
+      hsl(262 70% 55% / 0.08) 0%,
+      hsl(280 60% 60% / 0.04) 100%
+    );
+  }
+
+  .gradient-neutral {
+    background: linear-gradient(
+      135deg,
+      hsl(218 15% 55% / 0.08) 0%,
+      hsl(210 15% 60% / 0.04) 100%
+    );
   }
 
   /* Shadows */
@@ -172,12 +268,24 @@
     box-shadow: 0 2px 12px -2px hsl(var(--foreground) / 0.08), 0 1px 3px hsl(var(--foreground) / 0.04);
   }
 
+  .shadow-hero {
+    box-shadow: 
+      0 8px 32px -8px hsl(173 78% 26% / 0.2),
+      0 4px 16px -4px hsl(var(--foreground) / 0.05),
+      inset 0 1px 0 hsl(0 0% 100% / 0.1);
+  }
+
   .shadow-glow {
     box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.3);
   }
 
   .shadow-glow-accent {
     box-shadow: 0 0 20px -5px hsl(var(--accent) / 0.4);
+  }
+
+  /* Inner glow for hero cards */
+  .inner-glow {
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.1), inset 0 -1px 0 hsl(0 0% 0% / 0.05);
   }
 
   /* Animations */
@@ -193,9 +301,24 @@
     animation: scaleIn 0.2s ease-out;
   }
 
+  /* Hover effects */
+  .hover-lift {
+    @apply transition-all duration-200;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -6px hsl(var(--foreground) / 0.12);
+  }
+
   /* Card styling utility */
   .card-elevated {
     @apply bg-card rounded-xl border border-border/50 shadow-card;
+  }
+
+  /* Section divider with subtle background change */
+  .section-alt {
+    @apply bg-muted/30;
   }
 
   /* Progress bar utilities */
@@ -209,6 +332,11 @@
 
   .progress-critical {
     @apply bg-destructive;
+  }
+
+  /* Icon glow for active elements */
+  .icon-glow {
+    filter: drop-shadow(0 0 6px hsl(var(--primary) / 0.4));
   }
 }
 

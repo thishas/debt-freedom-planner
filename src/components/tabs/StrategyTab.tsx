@@ -1,64 +1,6 @@
 import { useMemo } from 'react';
-import { CalendarDays, DollarSign, Target, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, DollarSign, Target, AlertCircle, CheckCircle2, Lightbulb, Snowflake, TrendingDown, ListOrdered, Shuffle, Pause } from 'lucide-react';
 import { Strategy, Debt, STRATEGY_LABELS, STRATEGY_DESCRIPTIONS } from '@/types/debt';
-import { Lightbulb } from 'lucide-react';
-
-const STRATEGY_GUIDANCE: Record<Strategy, { title: string; description: string; worksWell: string[] }> = {
-  SNOWBALL_LOWEST_BALANCE: {
-    title: 'Best if you want momentum.',
-    description: 'Paying off smaller balances first helps you see progress quickly and stay motivated.',
-    worksWell: [
-      'You feel overwhelmed by multiple balances',
-      'Motivation matters more than math',
-      'You want fast, visible wins',
-    ],
-  },
-  AVALANCHE_HIGHEST_APR: {
-    title: 'Best if you want to save the most money.',
-    description: 'This strategy minimizes interest paid over time, even if progress feels slower at first.',
-    worksWell: [
-      "You're comfortable staying patient",
-      'You want the most efficient payoff',
-      'Interest rates vary widely',
-    ],
-  },
-  ORDER_ENTERED: {
-    title: 'Best if you have personal priorities.',
-    description: 'You control the order, regardless of balance or interest rate.',
-    worksWell: [
-      'Certain debts feel more urgent',
-      'You want full control',
-      "Your priorities aren't purely financial",
-    ],
-  },
-  NO_SNOWBALL: {
-    title: 'Best for short-term stability.',
-    description: "You'll pay only the minimum on each debt without accelerating payoff.",
-    worksWell: [
-      'Cash flow is tight',
-      "You're in a temporary holding phase",
-      'Flexibility matters more than speed',
-    ],
-  },
-  CUSTOM_HIGHEST_FIRST: {
-    title: 'Best if your situation is unique.',
-    description: 'You manually rank debts based on what matters most to you.',
-    worksWell: [
-      'You want flexibility',
-      "You're managing special circumstances",
-      "You're comfortable setting ranks yourself",
-    ],
-  },
-  CUSTOM_LOWEST_FIRST: {
-    title: 'Best if your situation is unique.',
-    description: 'You manually rank debts based on what matters most to you.',
-    worksWell: [
-      'You want flexibility',
-      "You're managing special circumstances",
-      "You're comfortable setting ranks yourself",
-    ],
-  },
-};
 import { validateMonthlyBudget } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,6 +16,88 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+
+const STRATEGY_GUIDANCE: Record<Strategy, { 
+  title: string; 
+  description: string; 
+  worksWell: string[];
+  icon: typeof Snowflake;
+  gradientClass: string;
+  accentClass: string;
+}> = {
+  SNOWBALL_LOWEST_BALANCE: {
+    title: 'Best if you want momentum.',
+    description: 'Paying off smaller balances first helps you see progress quickly and stay motivated.',
+    worksWell: [
+      'You feel overwhelmed by multiple balances',
+      'Motivation matters more than math',
+      'You want fast, visible wins',
+    ],
+    icon: Snowflake,
+    gradientClass: 'gradient-snowball',
+    accentClass: 'text-strategy-snowball',
+  },
+  AVALANCHE_HIGHEST_APR: {
+    title: 'Best if you want to save the most money.',
+    description: 'This strategy minimizes interest paid over time, even if progress feels slower at first.',
+    worksWell: [
+      "You're comfortable staying patient",
+      'You want the most efficient payoff',
+      'Interest rates vary widely',
+    ],
+    icon: TrendingDown,
+    gradientClass: 'gradient-avalanche',
+    accentClass: 'text-strategy-avalanche',
+  },
+  ORDER_ENTERED: {
+    title: 'Best if you have personal priorities.',
+    description: 'You control the order, regardless of balance or interest rate.',
+    worksWell: [
+      'Certain debts feel more urgent',
+      'You want full control',
+      "Your priorities aren't purely financial",
+    ],
+    icon: ListOrdered,
+    gradientClass: 'gradient-neutral',
+    accentClass: 'text-strategy-neutral',
+  },
+  NO_SNOWBALL: {
+    title: 'Best for short-term stability.',
+    description: "You'll pay only the minimum on each debt without accelerating payoff.",
+    worksWell: [
+      'Cash flow is tight',
+      "You're in a temporary holding phase",
+      'Flexibility matters more than speed',
+    ],
+    icon: Pause,
+    gradientClass: 'gradient-neutral',
+    accentClass: 'text-strategy-neutral',
+  },
+  CUSTOM_HIGHEST_FIRST: {
+    title: 'Best if your situation is unique.',
+    description: 'You manually rank debts based on what matters most to you.',
+    worksWell: [
+      'You want flexibility',
+      "You're managing special circumstances",
+      "You're comfortable setting ranks yourself",
+    ],
+    icon: Shuffle,
+    gradientClass: 'gradient-custom',
+    accentClass: 'text-strategy-custom',
+  },
+  CUSTOM_LOWEST_FIRST: {
+    title: 'Best if your situation is unique.',
+    description: 'You manually rank debts based on what matters most to you.',
+    worksWell: [
+      'You want flexibility',
+      "You're managing special circumstances",
+      "You're comfortable setting ranks yourself",
+    ],
+    icon: Shuffle,
+    gradientClass: 'gradient-custom',
+    accentClass: 'text-strategy-custom',
+  },
+};
 
 interface StrategyTabProps {
   debts: Debt[];
@@ -109,14 +133,52 @@ export const StrategyTab = ({
   };
 
   const parsedDate = balanceDate ? parseISO(balanceDate) : new Date();
+  const currentGuidance = STRATEGY_GUIDANCE[strategy];
+  const StrategyIcon = currentGuidance.icon;
 
   return (
     <div className="space-y-4 animate-fade-in">
+      {/* Hero Insight Section */}
+      <div className="gradient-hero rounded-2xl p-5 shadow-hero inner-glow">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-primary-foreground">Your Strategy</h2>
+            <p className="text-sm text-primary-foreground/70">Plan your debt-free journey</p>
+          </div>
+          <div className={cn(
+            "p-2.5 rounded-xl bg-primary-foreground/15 backdrop-blur-sm"
+          )}>
+            <StrategyIcon className="w-5 h-5 text-primary-foreground" />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Monthly Budget</p>
+            <p className="text-lg font-bold text-primary-foreground">{formatCurrency(monthlyBudget)}</p>
+          </div>
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Snowball</p>
+            <p className="text-lg font-bold text-primary-foreground">
+              {validation.valid ? formatCurrency(validation.initialSnowball) : '$0'}
+            </p>
+          </div>
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Strategy</p>
+            <p className="text-sm font-semibold text-primary-foreground truncate">
+              {STRATEGY_LABELS[strategy].split(' ')[0]}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Balance Date */}
-      <Card className="shadow-soft">
+      <Card className="shadow-card hover-lift border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-primary" />
+            <div className="p-1.5 rounded-lg bg-accent-secondary/10">
+              <CalendarDays className="w-4 h-4 text-accent-secondary" />
+            </div>
             Balance Date
           </CardTitle>
         </CardHeader>
@@ -152,10 +214,12 @@ export const StrategyTab = ({
       </Card>
 
       {/* Monthly Budget */}
-      <Card className="shadow-soft">
+      <Card className="shadow-card hover-lift border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-primary" />
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <DollarSign className="w-4 h-4 text-primary" />
+            </div>
             Monthly Budget
           </CardTitle>
         </CardHeader>
@@ -178,28 +242,28 @@ export const StrategyTab = ({
           {activeDebts.length > 0 && (
             <div
               className={cn(
-                'flex items-start gap-2 p-3 rounded-lg text-sm',
+                'flex items-start gap-2 p-3 rounded-xl text-sm transition-colors',
                 validation.valid
-                  ? 'bg-success/10 text-success'
-                  : 'bg-destructive/10 text-destructive'
+                  ? 'gradient-snowball border border-success/20'
+                  : 'bg-destructive/10 border border-destructive/20'
               )}
             >
               {validation.valid ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-success" />
                   <div>
-                    <p className="font-medium">Budget is sufficient</p>
-                    <p className="text-xs opacity-80">
+                    <p className="font-medium text-success">Budget is sufficient</p>
+                    <p className="text-xs text-success/80">
                       Initial snowball: {formatCurrency(validation.initialSnowball)}/month
                     </p>
                   </div>
                 </>
               ) : (
                 <>
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-destructive" />
                   <div>
-                    <p className="font-medium">Insufficient budget</p>
-                    <p className="text-xs opacity-80">{validation.message}</p>
+                    <p className="font-medium text-destructive">Insufficient budget</p>
+                    <p className="text-xs text-destructive/80">{validation.message}</p>
                   </div>
                 </>
               )}
@@ -209,10 +273,12 @@ export const StrategyTab = ({
       </Card>
 
       {/* Strategy Selection */}
-      <Card className="shadow-soft">
+      <Card className={cn("shadow-card hover-lift border-border/50 transition-colors", currentGuidance.gradientClass)}>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Target className="w-4 h-4 text-primary" />
+            <div className={cn("p-1.5 rounded-lg", currentGuidance.gradientClass.includes('snowball') ? 'bg-strategy-snowball/10' : currentGuidance.gradientClass.includes('avalanche') ? 'bg-strategy-avalanche/10' : currentGuidance.gradientClass.includes('custom') ? 'bg-strategy-custom/10' : 'bg-muted')}>
+              <Target className={cn("w-4 h-4", currentGuidance.accentClass)} />
+            </div>
             Payoff Strategy
           </CardTitle>
         </CardHeader>
@@ -234,17 +300,20 @@ export const StrategyTab = ({
           </p>
 
           {/* Strategy Guidance */}
-          <div className="mt-4 p-3 rounded-lg bg-muted/50 space-y-2">
-            <p className="text-sm font-medium text-foreground">
-              {STRATEGY_GUIDANCE[strategy].title}
-            </p>
+          <div className={cn("mt-4 p-4 rounded-xl border border-border/30 space-y-2", currentGuidance.gradientClass)}>
+            <div className="flex items-center gap-2">
+              <StrategyIcon className={cn("w-4 h-4", currentGuidance.accentClass)} />
+              <p className="text-sm font-semibold text-foreground">
+                {currentGuidance.title}
+              </p>
+            </div>
             <p className="text-xs text-muted-foreground">
-              {STRATEGY_GUIDANCE[strategy].description}
+              {currentGuidance.description}
             </p>
-            <div className="space-y-1">
+            <div className="space-y-1 pt-1">
               <p className="text-xs font-medium text-muted-foreground">Works well when:</p>
               <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
-                {STRATEGY_GUIDANCE[strategy].worksWell.map((item, idx) => (
+                {currentGuidance.worksWell.map((item, idx) => (
                   <li key={idx}>{item}</li>
                 ))}
               </ul>
@@ -254,10 +323,12 @@ export const StrategyTab = ({
       </Card>
 
       {/* Tip Callout */}
-      <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
-        <Lightbulb className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 p-4 rounded-xl gradient-card-cyan border border-accent-secondary/10">
+        <div className="p-1.5 rounded-lg bg-accent-secondary/10">
+          <Lightbulb className="w-4 h-4 text-accent-secondary" />
+        </div>
         <div className="text-xs text-muted-foreground space-y-1">
-          <p className="font-medium text-foreground">Tip</p>
+          <p className="font-semibold text-foreground">Tip</p>
           <p>
             The best strategy is the one you can stick with.
             Snowball helps with motivation. Avalanche saves the most money.
@@ -265,7 +336,6 @@ export const StrategyTab = ({
           </p>
         </div>
       </div>
-
     </div>
   );
 };
