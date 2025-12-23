@@ -7,6 +7,7 @@ import { Header } from '@/components/Header';
 import { BottomNav, TabId } from '@/components/BottomNav';
 import { DebtsTab } from '@/components/tabs/DebtsTab';
 import { StrategyTab } from '@/components/tabs/StrategyTab';
+import { PayoffOrderTab } from '@/components/tabs/PayoffOrderTab';
 import { ScheduleTab } from '@/components/tabs/ScheduleTab';
 import { ChartsTab } from '@/components/tabs/ChartsTab';
 import { BudgetTab } from '@/components/tabs/BudgetTab';
@@ -15,7 +16,7 @@ import { HelpSheet } from '@/components/HelpSheet';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<TabId>('debts');
+  const [activeTab, setActiveTab] = useState<TabId>('strategy');
   const [helpOpen, setHelpOpen] = useState(false);
 
   const {
@@ -108,6 +109,13 @@ const Index = () => {
             onStrategyChange={setStrategy}
             onMonthlyBudgetChange={setMonthlyBudget}
             onBalanceDateChange={setBalanceDate}
+          />
+        )}
+
+        {activeTab === 'payoff-order' && activePlan && (
+          <PayoffOrderTab
+            debts={activePlan.debts}
+            strategy={activePlan.strategy}
           />
         )}
 
