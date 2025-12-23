@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { usePlan } from '@/hooks/usePlan';
+import { useBudget } from '@/hooks/useBudget';
 import { calculatePayoffSchedule, validateMonthlyBudget } from '@/lib/calculations';
 import { parseISO } from 'date-fns';
 import { Header } from '@/components/Header';
@@ -8,6 +9,7 @@ import { DebtsTab } from '@/components/tabs/DebtsTab';
 import { StrategyTab } from '@/components/tabs/StrategyTab';
 import { ScheduleTab } from '@/components/tabs/ScheduleTab';
 import { ChartsTab } from '@/components/tabs/ChartsTab';
+import { BudgetTab } from '@/components/tabs/BudgetTab';
 import { ExportTab } from '@/components/tabs/ExportTab';
 import { HelpSheet } from '@/components/HelpSheet';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,6 +34,20 @@ const Index = () => {
     importDebts,
   } = usePlan();
 
+  const {
+    accounts,
+    bills,
+    forecastWindow,
+    isLoading: budgetLoading,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    addBill,
+    updateBill,
+    deleteBill,
+    setForecastWindow,
+  } = useBudget();
+
   // Calculate payoff schedule whenever plan changes
   const calculationResult = useMemo(() => {
     if (!activePlan || activePlan.debts.length === 0) return null;
@@ -50,7 +66,7 @@ const Index = () => {
     );
   }, [activePlan]);
 
-  if (isLoading) {
+  if (isLoading || budgetLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="p-4 space-y-4 max-w-lg mx-auto">
@@ -106,6 +122,22 @@ const Index = () => {
           <ChartsTab
             calculationResult={calculationResult}
             debts={activePlan.debts}
+          />
+        )}
+
+        {activeTab === 'budget' && activePlan && (
+          <BudgetTab
+            accounts={accounts}
+            bills={bills}
+            debts={activePlan.debts}
+            forecastWindow={forecastWindow}
+            onAddAccount={addAccount}
+            onUpdateAccount={updateAccount}
+            onDeleteAccount={deleteAccount}
+            onAddBill={addBill}
+            onUpdateBill={updateBill}
+            onDeleteBill={deleteBill}
+            onSetForecastWindow={setForecastWindow}
           />
         )}
 
