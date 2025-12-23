@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 import { CalendarDays, DollarSign, Target, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Strategy, Debt, STRATEGY_LABELS, STRATEGY_DESCRIPTIONS } from '@/types/debt';
-import { getPayoffOrder, validateMonthlyBudget } from '@/lib/calculations';
+import { validateMonthlyBudget } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -38,7 +37,6 @@ export const StrategyTab = ({
   onBalanceDateChange,
 }: StrategyTabProps) => {
   const activeDebts = debts.filter(d => d.active && d.balance > 0);
-  const payoffOrder = useMemo(() => getPayoffOrder(debts, strategy), [debts, strategy]);
   const validation = useMemo(
     () => validateMonthlyBudget(monthlyBudget, debts),
     [monthlyBudget, debts]
@@ -179,40 +177,6 @@ export const StrategyTab = ({
         </CardContent>
       </Card>
 
-      {/* Payoff Order Preview */}
-      {activeDebts.length > 0 && (
-        <Card className="shadow-soft">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Payoff Order</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {strategy === 'NO_SNOWBALL' ? (
-              <p className="text-sm text-muted-foreground">
-                No redistribution – each debt pays its own minimum payment only.
-              </p>
-            ) : (
-              <ol className="space-y-2">
-                {payoffOrder.map((debt, index) => (
-                  <li
-                    key={debt.id}
-                    className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50"
-                  >
-                    <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                      {index + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{debt.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatCurrency(debt.balance)} @ {(debt.apr * 100).toFixed(1)}%
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
