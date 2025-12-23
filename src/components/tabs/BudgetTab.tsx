@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Plus, Building2, CreditCard, Wallet, AlertTriangle, Pencil, Trash2, Check, X, Zap, Link2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Building2, CreditCard, Wallet, AlertTriangle, Pencil, Trash2, Zap, Link2, List, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,12 @@ import {
 } from '@/types/budget';
 import { Debt } from '@/types/debt';
 import { cn } from '@/lib/utils';
+import { BudgetCalendarView } from '@/components/budget/BudgetCalendarView';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
+type BudgetViewMode = 'list' | 'calendar';
+
+const BUDGET_VIEW_KEY = 'budget-view-mode';
 
 interface BudgetTabProps {
   accounts: BankAccount[];
@@ -226,10 +232,19 @@ export const BudgetTab = ({
   onDeleteBill,
   onSetForecastWindow,
 }: BudgetTabProps) => {
+  const [viewMode, setViewMode] = useState<BudgetViewMode>(() => {
+    const saved = localStorage.getItem(BUDGET_VIEW_KEY);
+    return (saved === 'calendar' || saved === 'list') ? saved : 'list';
+  });
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [billDialogOpen, setBillDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+
+  // Persist view mode
+  useEffect(() => {
+    localStorage.setItem(BUDGET_VIEW_KEY, viewMode);
+  }, [viewMode]);
 
   // Account form state
   const [accountName, setAccountName] = useState('');
@@ -379,9 +394,22 @@ export const BudgetTab = ({
 
   return (
     <div className="space-y-6">
-      {/* Summary Header */}
+      {/* Summary Header with View Toggle */}
       <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
         <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium">View</span>
+            <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as BudgetViewMode)}>
+              <ToggleGroupItem value="list" aria-label="List view" className="gap-1.5">
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">List</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="calendar" aria-label="Calendar view" className="gap-1.5">
+                <CalendarDays className="h-4 w-4" />
+                <span className="hidden sm:inline">Calendar</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-xs text-muted-foreground">Total Balance</p>
@@ -404,20 +432,30 @@ export const BudgetTab = ({
         </CardContent>
       </Card>
 
-      {/* Forecast Window Selector */}
-      <div className="flex items-center justify-between">
-        <Label className="text-sm">Forecast Period</Label>
-        <Select value={forecastWindow} onValueChange={(v) => onSetForecastWindow(v as ForecastWindow)}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(FORECAST_WINDOW_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Calendar View */}
+      {viewMode === 'calendar' ? (
+        <BudgetCalendarView
+          accounts={accounts}
+          bills={bills}
+          debts={debts}
+          onUpdateBill={onUpdateBill}
+        />
+      ) : (
+        <>
+          {/* Forecast Window Selector */}
+          <div className="flex items-center justify-between">
+            <Label className="text-sm">Forecast Period</Label>
+            <Select value={forecastWindow} onValueChange={(v) => onSetForecastWindow(v as ForecastWindow)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(FORECAST_WINDOW_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
       {/* Accounts Section */}
       <div className="space-y-3">
@@ -762,6 +800,8 @@ export const BudgetTab = ({
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 };
