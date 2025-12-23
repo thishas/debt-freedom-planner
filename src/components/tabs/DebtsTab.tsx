@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, AlertTriangle, DollarSign, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, AlertTriangle, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
 import { Debt, DEBT_TYPES, DebtType, FeeFrequency, FEE_FREQUENCY_LABELS, calculateUtilizationRate, calculateAvailableBalance, getUtilizationColor } from '@/types/debt';
 import { calculateMonthlyInterest, checkInterestOnlyRisk } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
@@ -235,36 +235,40 @@ export const DebtsTab = ({
     );
   };
 
+  const activeDebtsCount = debts.filter(d => d.active && d.balance > 0).length;
+
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="shadow-soft">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <DollarSign className="w-4 h-4" />
-              <span className="text-xs font-medium">Total Balance</span>
-            </div>
-            <p className="text-xl font-bold text-foreground font-mono">
-              {formatCurrency(totalBalance)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-soft">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <DollarSign className="w-4 h-4" />
-              <span className="text-xs font-medium">Min. Payments</span>
-            </div>
-            <p className="text-xl font-bold text-foreground font-mono">
-              {formatCurrency(totalMinPayments)}
-            </p>
-          </CardContent>
-        </Card>
+      {/* Hero Summary Section */}
+      <div className="gradient-hero rounded-2xl p-5 shadow-hero inner-glow">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-primary-foreground">Debt Overview</h2>
+            <p className="text-sm text-primary-foreground/70">See the full picture of what you owe</p>
+          </div>
+          <div className="p-2.5 rounded-xl bg-primary-foreground/15 backdrop-blur-sm">
+            <CreditCard className="w-5 h-5 text-primary-foreground" />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Total Balance</p>
+            <p className="text-lg font-bold text-primary-foreground font-mono">{formatCurrency(totalBalance)}</p>
+          </div>
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Min. Payments</p>
+            <p className="text-lg font-bold text-primary-foreground font-mono">{formatCurrency(totalMinPayments)}</p>
+          </div>
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+            <p className="text-xs text-primary-foreground/70 mb-1">Active Debts</p>
+            <p className="text-lg font-bold text-primary-foreground">{activeDebtsCount}</p>
+          </div>
+        </div>
       </div>
 
       {/* Add Debt Button */}
-      <Button onClick={handleOpenAdd} className="w-full gap-2 shadow-soft">
+      <Button onClick={handleOpenAdd} className="w-full gap-2 shadow-card hover-lift">
         <Plus className="w-4 h-4" />
         Add Debt
       </Button>
