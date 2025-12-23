@@ -1,7 +1,7 @@
-import { CreditCard, Target, Calendar, BarChart3, Download, HelpCircle } from 'lucide-react';
+import { CreditCard, Target, Calendar, BarChart3, Download, HelpCircle, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type TabId = 'debts' | 'strategy' | 'schedule' | 'charts' | 'export';
+export type TabId = 'debts' | 'strategy' | 'schedule' | 'charts' | 'budget' | 'export';
 
 interface BottomNavProps {
   activeTab: TabId;
@@ -14,6 +14,7 @@ const tabs: { id: TabId; label: string; icon: typeof CreditCard }[] = [
   { id: 'strategy', label: 'Strategy', icon: Target },
   { id: 'schedule', label: 'Schedule', icon: Calendar },
   { id: 'charts', label: 'Charts', icon: BarChart3 },
+  { id: 'budget', label: 'Budget', icon: Wallet },
   { id: 'export', label: 'Export', icon: Download },
 ];
 
