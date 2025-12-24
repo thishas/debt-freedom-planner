@@ -165,6 +165,7 @@ export const usePlan = () => {
     updateActivePlan({ balanceDate });
   }, [updateActivePlan]);
 
+  // Import debts (replaces all existing debts)
   const importDebts = useCallback((debts: Partial<Debt>[]) => {
     if (!activePlan) return;
     
@@ -178,7 +179,8 @@ export const usePlan = () => {
       active: (d.balance || 0) > 0,
     }));
     
-    updateActivePlan({ debts: [...activePlan.debts, ...newDebts] });
+    // Replace all existing debts with imported ones
+    updateActivePlan({ debts: newDebts });
   }, [activePlan, updateActivePlan]);
 
   // Import a full plan (replaces current active plan's data)
