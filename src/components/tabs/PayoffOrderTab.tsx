@@ -108,18 +108,18 @@ export const PayoffOrderTab = ({ debts, strategy }: PayoffOrderTabProps) => {
           </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Total Debt</p>
-            <p className="text-lg font-bold text-primary-foreground">{formatCurrency(totalBalance)}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">{formatCurrency(totalBalance)}</p>
           </div>
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Min. Payments</p>
-            <p className="text-lg font-bold text-primary-foreground">{formatCurrency(totalMinPayment)}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">{formatCurrency(totalMinPayment)}</p>
           </div>
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Active Debts</p>
-            <p className="text-lg font-bold text-primary-foreground">{activeDebts.length}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono">{activeDebts.length}</p>
           </div>
         </div>
       </div>

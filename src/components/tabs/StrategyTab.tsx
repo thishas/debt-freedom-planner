@@ -152,20 +152,20 @@ export const StrategyTab = ({
           </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Monthly Budget</p>
-            <p className="text-lg font-bold text-primary-foreground">{formatCurrency(monthlyBudget)}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">{formatCurrency(monthlyBudget)}</p>
           </div>
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Snowball</p>
-            <p className="text-lg font-bold text-primary-foreground">
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">
               {validation.valid ? formatCurrency(validation.initialSnowball) : '$0'}
             </p>
           </div>
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Strategy</p>
-            <p className="text-sm font-semibold text-primary-foreground truncate">
+            <p className="text-sm md:text-lg font-semibold text-primary-foreground truncate">
               {STRATEGY_LABELS[strategy].split(' ')[0]}
             </p>
           </div>
