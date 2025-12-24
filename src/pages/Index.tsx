@@ -69,6 +69,8 @@ const Index = () => {
     updateBill,
     deleteBill,
     setForecastWindow,
+    importAccounts,
+    importBills,
     loadSampleBudget,
     clearBudgetData,
   } = useBudget();
@@ -259,6 +261,8 @@ const Index = () => {
             hasActiveUserData={hasActiveUserData}
             onLoadSampleData={handleLoadSampleData}
             onClearSampleData={handleClearSampleData}
+            onImportAccounts={importAccounts}
+            onImportBills={importBills}
           />
         )}
       </main>

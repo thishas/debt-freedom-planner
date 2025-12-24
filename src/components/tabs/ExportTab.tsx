@@ -17,6 +17,11 @@ import {
   parsePlanFromJSON,
   formatLastUpdated,
 } from '@/lib/storage';
+import {
+  parseAccountsFromCSV,
+  parseBillsFromCSV,
+  generateId,
+} from '@/lib/budgetStorage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -41,9 +46,11 @@ interface ExportTabProps {
   bills: BillItem[];
   forecastWindow: ForecastWindow;
   showSampleBanner?: boolean;
-  hasActiveUserData?: boolean; // Whether any user data exists (debts, accounts, or bills)
+  hasActiveUserData?: boolean;
   onLoadSampleData?: () => void;
   onClearSampleData?: () => void;
+  onImportAccounts?: (accounts: BankAccount[]) => void;
+  onImportBills?: (bills: BillItem[]) => void;
 }
 
 const formatCurrency = (amount: number) => {
@@ -65,12 +72,18 @@ export const ExportTab = ({
   hasActiveUserData,
   onLoadSampleData,
   onClearSampleData,
+  onImportAccounts,
+  onImportBills,
 }: ExportTabProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const planFileInputRef = useRef<HTMLInputElement>(null);
+  const accountsFileInputRef = useRef<HTMLInputElement>(null);
+  const billsFileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [importWarningOpen, setImportWarningOpen] = useState(false);
   const [pendingImportPlan, setPendingImportPlan] = useState<Plan | null>(null);
+  const [accountsImportResult, setAccountsImportResult] = useState<string | null>(null);
+  const [billsImportResult, setBillsImportResult] = useState<string | null>(null);
 
   const downloadFile = (content: string, filename: string, type: string) => {
     const blob = new Blob([content], { type });
@@ -432,6 +445,105 @@ ${sortedBills.map(bill => {
     });
   };
 
+  // Accounts Import
+  const handleImportAccountsClick = () => {
+    accountsFileInputRef.current?.click();
+  };
+
+  const handleAccountsFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setAccountsImportResult(null);
+    try {
+      const text = await file.text();
+      const { imported, skipped } = parseAccountsFromCSV(text, accounts);
+
+      if (imported.length === 0) {
+        setAccountsImportResult('No valid accounts found.');
+      } else {
+        // Convert to full BankAccount objects with IDs
+        const newAccounts: BankAccount[] = imported.map(acc => ({
+          id: generateId(),
+          name: acc.name || 'Unnamed Account',
+          institution: acc.institution || undefined,
+          currentBalance: acc.currentBalance || 0,
+          notes: acc.notes || undefined,
+          isPrimary: acc.isPrimary || false,
+        }));
+        
+        onImportAccounts?.(newAccounts);
+        const resultMsg = `Imported ${imported.length} row${imported.length !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} row${skipped !== 1 ? 's' : ''} (invalid format)` : ''}`;
+        setAccountsImportResult(resultMsg);
+      }
+    } catch (error) {
+      setAccountsImportResult('Could not parse CSV file.');
+    } finally {
+      setImporting(false);
+      if (accountsFileInputRef.current) {
+        accountsFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Bills Import
+  const handleImportBillsClick = () => {
+    billsFileInputRef.current?.click();
+  };
+
+  const handleBillsFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setBillsImportResult(null);
+    try {
+      const text = await file.text();
+      const { imported, skipped } = parseBillsFromCSV(text, accounts);
+
+      if (imported.length === 0) {
+        setBillsImportResult('No valid bills found.');
+      } else {
+        // Convert to full BillItem objects with IDs
+        const newBills: BillItem[] = imported.map(bill => ({
+          id: generateId(),
+          label: bill.label || 'Unnamed Bill',
+          amount: bill.amount || 0,
+          dueDay: bill.dueDay,
+          dueDate: bill.dueDate,
+          frequency: bill.frequency || 'MONTHLY',
+          category: bill.category || 'Other',
+          linkedDebtId: bill.linkedDebtId,
+          payFromAccountId: bill.payFromAccountId || '',
+          status: bill.status || 'PLANNED',
+          autopay: bill.autopay || false,
+          notes: bill.notes,
+        }));
+        
+        onImportBills?.(newBills);
+        
+        // Count unlinked accounts
+        const unlinkedCount = imported.filter(b => !b.payFromAccountId && b.payFromAccountName).length;
+        let resultMsg = `Imported ${imported.length} row${imported.length !== 1 ? 's' : ''}`;
+        if (skipped > 0) {
+          resultMsg += `, skipped ${skipped} row${skipped !== 1 ? 's' : ''} (invalid format)`;
+        }
+        if (unlinkedCount > 0) {
+          resultMsg += `. ${unlinkedCount} bill${unlinkedCount !== 1 ? 's have' : ' has'} unlinked account${unlinkedCount !== 1 ? 's' : ''}.`;
+        }
+        setBillsImportResult(resultMsg);
+      }
+    } catch (error) {
+      setBillsImportResult('Could not parse CSV file.');
+    } finally {
+      setImporting(false);
+      if (billsFileInputRef.current) {
+        billsFileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
@@ -653,7 +765,7 @@ ${sortedBills.map(bill => {
         </CardContent>
       </Card>
 
-      {/* Import Section */}
+      {/* Import Debts Section */}
       <Card className="shadow-soft">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -689,28 +801,94 @@ ${sortedBills.map(bill => {
           >
             Download Debts CSV Template
           </Button>
-          
-          <Separator className="my-2" />
-          
-          <p className="text-xs text-muted-foreground">Budget Templates</p>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-1 text-xs text-muted-foreground"
-              onClick={downloadAccountsTemplate}
-            >
-              Accounts Template
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-1 text-xs text-muted-foreground"
-              onClick={downloadBillsTemplate}
-            >
-              Bills Template
-            </Button>
-          </div>
+        </CardContent>
+      </Card>
+
+      {/* Import Accounts Section */}
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Upload className="w-4 h-4 text-primary" />
+            Import Accounts
+          </CardTitle>
+          <CardDescription>
+            Import accounts from a CSV file (adds to existing accounts).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <input
+            ref={accountsFileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleAccountsFileChange}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3"
+            onClick={handleImportAccountsClick}
+            disabled={importing || !onImportAccounts}
+          >
+            <Upload className="w-4 h-4" />
+            {importing ? 'Importing...' : 'Import Accounts from CSV'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs text-muted-foreground"
+            onClick={downloadAccountsTemplate}
+          >
+            Accounts Template
+          </Button>
+          {accountsImportResult && (
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+              {accountsImportResult}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Import Bills Section */}
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Upload className="w-4 h-4 text-primary" />
+            Import Bills
+          </CardTitle>
+          <CardDescription>
+            Import bills from a CSV file (adds to existing bills).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <input
+            ref={billsFileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleBillsFileChange}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3"
+            onClick={handleImportBillsClick}
+            disabled={importing || !onImportBills}
+          >
+            <Upload className="w-4 h-4" />
+            {importing ? 'Importing...' : 'Import Bills from CSV'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-xs text-muted-foreground"
+            onClick={downloadBillsTemplate}
+          >
+            Bills Template
+          </Button>
+          {billsImportResult && (
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+              {billsImportResult}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -760,25 +938,65 @@ ${sortedBills.map(bill => {
 
       {/* CSV Format Info */}
       <Card className="shadow-soft bg-secondary/30">
-        <CardContent className="p-4">
-          <h4 className="font-medium text-sm mb-2">Debts CSV Format</h4>
-          <p className="text-xs text-muted-foreground mb-2">
-            Your CSV should have these columns:
-          </p>
-          <div className="bg-background rounded p-2 font-mono text-xs overflow-x-auto">
-            name,balance,apr,minPayment,customRank,creditLimit
+        <CardContent className="p-4 space-y-4">
+          {/* Debts Format */}
+          <div>
+            <h4 className="font-medium text-sm mb-2">Debts CSV Format</h4>
+            <div className="bg-background rounded p-2 font-mono text-xs overflow-x-auto">
+              name,balance,apr,minPayment,customRank,creditLimit
+            </div>
+            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <li>• <strong>name</strong>: Debt name (text)</li>
+              <li>• <strong>balance</strong>: Current balance (number)</li>
+              <li>• <strong>apr</strong>: Annual rate (e.g., 19.5 or 0.195 for 19.5%)</li>
+              <li>• <strong>minPayment</strong>: Minimum payment (number)</li>
+              <li>• <strong>customRank</strong>: Optional priority rank (integer)</li>
+              <li>• <strong>creditLimit</strong>: Optional credit limit (number)</li>
+            </ul>
+            <p className="mt-1 text-xs text-muted-foreground italic">
+              Note: creditLimit is optional. If omitted, Utilization will display N/A.
+            </p>
           </div>
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            <li>• <strong>name</strong>: Debt name (text)</li>
-            <li>• <strong>balance</strong>: Current balance (number)</li>
-            <li>• <strong>apr</strong>: Annual rate (e.g., 19.5 or 0.195 for 19.5%)</li>
-            <li>• <strong>minPayment</strong>: Minimum payment (number)</li>
-            <li>• <strong>customRank</strong>: Optional priority rank (integer)</li>
-            <li>• <strong>creditLimit</strong>: Optional credit limit (number)</li>
-          </ul>
-          <p className="mt-2 text-xs text-muted-foreground italic">
-            Note: creditLimit is optional. If omitted, Utilization will display N/A.
-          </p>
+          
+          <Separator />
+          
+          {/* Accounts Format */}
+          <div>
+            <h4 className="font-medium text-sm mb-2">Accounts CSV Format</h4>
+            <div className="bg-background rounded p-2 font-mono text-xs overflow-x-auto">
+              accountName,institution,currentBalance,notes,isPrimary
+            </div>
+            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <li>• <strong>accountName</strong>: Account name (required)</li>
+              <li>• <strong>institution</strong>: Bank name (optional)</li>
+              <li>• <strong>currentBalance</strong>: Balance (required, number)</li>
+              <li>• <strong>notes</strong>: Notes (optional)</li>
+              <li>• <strong>isPrimary</strong>: TRUE/FALSE (optional, default FALSE)</li>
+            </ul>
+          </div>
+          
+          <Separator />
+          
+          {/* Bills Format */}
+          <div>
+            <h4 className="font-medium text-sm mb-2">Bills CSV Format</h4>
+            <div className="bg-background rounded p-2 font-mono text-xs overflow-x-auto whitespace-nowrap">
+              label,amount,payFromAccount,category,dueType,dueDay,dueDate,frequency,status,autopay,notes
+            </div>
+            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <li>• <strong>label</strong>: Bill name (required)</li>
+              <li>• <strong>amount</strong>: Amount (required)</li>
+              <li>• <strong>payFromAccount</strong>: Account name to match (optional)</li>
+              <li>• <strong>category</strong>: Rent, Utilities, Subscriptions, Insurance, Credit Card, Loan, Other</li>
+              <li>• <strong>dueType</strong>: DAY_OF_MONTH or EXACT_DATE</li>
+              <li>• <strong>dueDay</strong>: 1-31 for monthly bills</li>
+              <li>• <strong>dueDate</strong>: YYYY-MM-DD or MM/DD/YYYY for one-time</li>
+              <li>• <strong>frequency</strong>: MONTHLY or ONE_TIME</li>
+              <li>• <strong>status</strong>: PLANNED, PAID, or SKIPPED</li>
+              <li>• <strong>autopay</strong>: TRUE/FALSE (optional)</li>
+              <li>• <strong>notes</strong>: Notes (optional)</li>
+            </ul>
+          </div>
         </CardContent>
       </Card>
 
