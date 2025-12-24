@@ -79,41 +79,38 @@ export const ScheduleTab = ({ calculationResult, debts }: ScheduleTabProps) => {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="shadow-soft">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <TrendingDown className="w-3 h-3" />
-              <span className="text-[10px] font-medium">Total Interest</span>
-            </div>
-            <p className="text-sm font-bold text-foreground font-mono">
+      {/* Summary Cards - matches DebtsTab hero styling */}
+      <div className="gradient-hero rounded-2xl p-5 shadow-hero inner-glow">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-primary-foreground">Payoff Summary</h2>
+            <p className="text-sm text-primary-foreground/70">Your projected debt-free timeline</p>
+          </div>
+          <div className="p-2.5 rounded-xl bg-primary-foreground/15 backdrop-blur-sm">
+            <Calendar className="w-5 h-5 text-primary-foreground" />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
+            <p className="text-xs text-primary-foreground/70 mb-1">Total Interest</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">
               {formatCurrency(calculationResult.totalInterestPaid)}
             </p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-soft">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <Calendar className="w-3 h-3" />
-              <span className="text-[10px] font-medium">Months</span>
-            </div>
-            <p className="text-sm font-bold text-foreground font-mono">
+          </div>
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
+            <p className="text-xs text-primary-foreground/70 mb-1">Months</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono">
               {calculationResult.monthsToPayoff}
             </p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-soft">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <DollarSign className="w-3 h-3" />
-              <span className="text-[10px] font-medium">Debt-Free</span>
-            </div>
-            <p className="text-sm font-bold text-primary font-mono">
+          </div>
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
+            <p className="text-xs text-primary-foreground/70 mb-1">Debt-Free</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">
               {format(parseISO(calculationResult.payoffDate), 'MMM yy')}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Filter */}
