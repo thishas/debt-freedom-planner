@@ -17,8 +17,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { WelcomeDialog } from '@/components/WelcomeDialog';
 import { SampleDataBanner } from '@/components/SampleDataBanner';
 import { 
-  isFirstVisit, 
-  markFirstVisitComplete, 
   hasSampleData, 
   setSampleDataActive 
 } from '@/lib/sampleData';
@@ -75,16 +73,28 @@ const Index = () => {
     clearBudgetData,
   } = useBudget();
 
-  // Check for first visit and sample data status
+  // Check if user has any active plan data (state-based, not flag-based)
+  const hasActiveUserData = useMemo(() => {
+    if (!activePlan) return false;
+    const hasDebts = activePlan.debts.length > 0;
+    const hasAccounts = accounts.length > 0;
+    return hasDebts || hasAccounts;
+  }, [activePlan, accounts]);
+
+  // State-based onboarding: show welcome when no data exists
   useEffect(() => {
     if (!isLoading && !budgetLoading) {
-      if (isFirstVisit()) {
+      if (!hasActiveUserData) {
+        // No data exists - show welcome dialog
         setShowWelcome(true);
+        setShowSampleBanner(false);
       } else {
+        // Data exists - hide welcome, check if it's sample data
+        setShowWelcome(false);
         setShowSampleBanner(hasSampleData());
       }
     }
-  }, [isLoading, budgetLoading]);
+  }, [isLoading, budgetLoading, hasActiveUserData]);
 
   // Handle loading sample data
   const handleLoadSampleData = () => {
@@ -99,16 +109,13 @@ const Index = () => {
     };
     
     loadSampleBudget(debtIds);
-    markFirstVisitComplete();
-    setShowWelcome(false);
-    setShowSampleBanner(true);
+    // State will auto-update via hasActiveUserData
   };
 
   // Handle starting with empty plan
   const handleStartEmpty = () => {
-    markFirstVisitComplete();
+    // Just close the dialog - user will add their own data
     setShowWelcome(false);
-    setShowSampleBanner(false);
   };
 
   // Handle clearing sample data
@@ -120,7 +127,7 @@ const Index = () => {
     clearAllData();
     clearBudgetData();
     setSampleDataActive(false);
-    setShowSampleBanner(false);
+    // State will auto-trigger welcome dialog via hasActiveUserData effect
     setClearConfirmOpen(false);
   };
 
