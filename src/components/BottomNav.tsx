@@ -16,7 +16,7 @@ const tabs: { id: TabId; label: string; icon: typeof CreditCard }[] = [
   { id: 'schedule', label: 'Schedule', icon: Calendar },
   { id: 'charts', label: 'Charts', icon: BarChart3 },
   { id: 'budget', label: 'Budget', icon: Wallet },
-  { id: 'export', label: 'Export', icon: RefreshCw },
+  { id: 'export', label: 'Sync', icon: RefreshCw },
 ];
 
 export const BottomNav = ({ activeTab, onTabChange, onHelpClick }: BottomNavProps) => {
