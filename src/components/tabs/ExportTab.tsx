@@ -41,6 +41,7 @@ interface ExportTabProps {
   bills: BillItem[];
   forecastWindow: ForecastWindow;
   showSampleBanner?: boolean;
+  hasActiveUserData?: boolean; // Whether any user data exists (debts, accounts, or bills)
   onLoadSampleData?: () => void;
   onClearSampleData?: () => void;
 }
@@ -61,6 +62,7 @@ export const ExportTab = ({
   bills,
   forecastWindow,
   showSampleBanner,
+  hasActiveUserData,
   onLoadSampleData,
   onClearSampleData,
 }: ExportTabProps) => {
@@ -712,35 +714,45 @@ ${sortedBills.map(bill => {
         </CardContent>
       </Card>
 
-      {/* Sample Data Section */}
+      {/* Data Management Section */}
       <Card className="shadow-soft border-dashed border-2">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-accent-secondary-DEFAULT" />
-            Sample Data
+            Data Management
           </CardTitle>
           <CardDescription>
-            Load realistic sample data to explore the app, or clear it to start fresh.
+            Load sample data to explore the app, or clear all data to start fresh.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Load Sample Plan - only available when no user data exists */}
           <Button
             variant="outline"
             className="w-full justify-start gap-3"
             onClick={onLoadSampleData}
-            disabled={showSampleBanner}
+            disabled={hasActiveUserData || showSampleBanner}
           >
             <Sparkles className="w-4 h-4" />
             {showSampleBanner ? 'Sample Data Loaded' : 'Load Sample Plan'}
           </Button>
-          {showSampleBanner && (
+          
+          {/* Show message if user has data and tries to load sample */}
+          {hasActiveUserData && !showSampleBanner && (
+            <p className="text-xs text-muted-foreground px-1">
+              Clear your current plan to load the sample plan.
+            </p>
+          )}
+          
+          {/* Clear All Data - available for BOTH sample and empty plan users */}
+          {hasActiveUserData && (
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={onClearSampleData}
             >
               <Trash2 className="w-4 h-4" />
-              Clear Sample Data
+              {showSampleBanner ? 'Clear Sample Data' : 'Clear All Data'}
             </Button>
           )}
         </CardContent>
