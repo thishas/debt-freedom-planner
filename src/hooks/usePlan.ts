@@ -10,6 +10,7 @@ import {
   incrementVersion,
   generatePlanIdentifier,
 } from '@/lib/storage';
+import { generateSamplePlan, setSampleDataActive } from '@/lib/sampleData';
 
 export const usePlan = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -200,6 +201,27 @@ export const usePlan = () => {
     updatePlans(newPlans);
   }, [activePlanId, plans, updatePlans]);
 
+  // Load sample plan data
+  const loadSamplePlan = useCallback(() => {
+    const samplePlan = generateSamplePlan();
+    setPlans([samplePlan]);
+    setActivePlanId(samplePlan.id);
+    savePlans([samplePlan]);
+    saveActivePlanId(samplePlan.id);
+    setSampleDataActive(true);
+    return samplePlan;
+  }, []);
+
+  // Clear all data and start fresh
+  const clearAllData = useCallback(() => {
+    const freshPlan = createDefaultPlan();
+    setPlans([freshPlan]);
+    setActivePlanId(freshPlan.id);
+    savePlans([freshPlan]);
+    saveActivePlanId(freshPlan.id);
+    setSampleDataActive(false);
+  }, []);
+
   return {
     plans,
     activePlan,
@@ -217,5 +239,7 @@ export const usePlan = () => {
     setBalanceDate,
     importDebts,
     importPlan,
+    loadSamplePlan,
+    clearAllData,
   };
 };

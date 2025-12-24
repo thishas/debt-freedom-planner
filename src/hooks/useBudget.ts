@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BudgetData, BankAccount, BillItem, ForecastWindow } from '@/types/budget';
 import { saveBudgetData, loadBudgetData, generateId } from '@/lib/budgetStorage';
+import { generateSampleBudgetData } from '@/lib/sampleData';
 
 export const useBudget = () => {
   const [budgetData, setBudgetData] = useState<BudgetData>({
@@ -131,6 +132,30 @@ export const useBudget = () => {
     }));
   }, []);
 
+  // Load sample budget data (with optional debt linkages)
+  const loadSampleBudget = useCallback((debtIds?: {
+    chaseCard?: string;
+    capitalOneCard?: string;
+    autoLoan?: string;
+    studentLoan?: string;
+  }) => {
+    const sampleData = generateSampleBudgetData(debtIds);
+    setBudgetData(sampleData);
+    saveBudgetData(sampleData);
+    return sampleData;
+  }, []);
+
+  // Clear all budget data
+  const clearBudgetData = useCallback(() => {
+    const emptyData: BudgetData = {
+      accounts: [],
+      bills: [],
+      forecastWindow: 'this_month',
+    };
+    setBudgetData(emptyData);
+    saveBudgetData(emptyData);
+  }, []);
+
   return {
     accounts: budgetData.accounts,
     bills: budgetData.bills,
@@ -149,5 +174,8 @@ export const useBudget = () => {
     // Import
     importAccounts,
     importBills,
+    // Sample data
+    loadSampleBudget,
+    clearBudgetData,
   };
 };

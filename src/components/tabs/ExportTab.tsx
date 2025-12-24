@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, Upload, FileText, Table, Wallet, Clock, Shield, AlertTriangle, Info } from 'lucide-react';
+import { Download, Upload, FileText, Table, Wallet, Clock, Shield, AlertTriangle, Info, Sparkles, Trash2 } from 'lucide-react';
 import { Plan, CalculationResult } from '@/types/debt';
 import { 
   BankAccount, 
@@ -40,6 +40,9 @@ interface ExportTabProps {
   accounts: BankAccount[];
   bills: BillItem[];
   forecastWindow: ForecastWindow;
+  showSampleBanner?: boolean;
+  onLoadSampleData?: () => void;
+  onClearSampleData?: () => void;
 }
 
 const formatCurrency = (amount: number) => {
@@ -57,6 +60,9 @@ export const ExportTab = ({
   accounts,
   bills,
   forecastWindow,
+  showSampleBanner,
+  onLoadSampleData,
+  onClearSampleData,
 }: ExportTabProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const planFileInputRef = useRef<HTMLInputElement>(null);
@@ -703,6 +709,40 @@ ${sortedBills.map(bill => {
               Bills Template
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Sample Data Section */}
+      <Card className="shadow-soft border-dashed border-2">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-accent-secondary-DEFAULT" />
+            Sample Data
+          </CardTitle>
+          <CardDescription>
+            Load realistic sample data to explore the app, or clear it to start fresh.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3"
+            onClick={onLoadSampleData}
+            disabled={showSampleBanner}
+          >
+            <Sparkles className="w-4 h-4" />
+            {showSampleBanner ? 'Sample Data Loaded' : 'Load Sample Plan'}
+          </Button>
+          {showSampleBanner && (
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={onClearSampleData}
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear Sample Data
+            </Button>
+          )}
         </CardContent>
       </Card>
 

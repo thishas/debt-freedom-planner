@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { usePlan } from '@/hooks/usePlan';
 import { useBudget } from '@/hooks/useBudget';
 import { calculatePayoffSchedule, validateMonthlyBudget } from '@/lib/calculations';
@@ -14,10 +14,31 @@ import { BudgetTab } from '@/components/tabs/BudgetTab';
 import { ExportTab } from '@/components/tabs/ExportTab';
 import { HelpSheet } from '@/components/HelpSheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { WelcomeDialog } from '@/components/WelcomeDialog';
+import { SampleDataBanner } from '@/components/SampleDataBanner';
+import { 
+  isFirstVisit, 
+  markFirstVisitComplete, 
+  hasSampleData, 
+  setSampleDataActive 
+} from '@/lib/sampleData';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('strategy');
   const [helpOpen, setHelpOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showSampleBanner, setShowSampleBanner] = useState(false);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   const {
     plans,
@@ -34,6 +55,8 @@ const Index = () => {
     setBalanceDate,
     importDebts,
     importPlan,
+    loadSamplePlan,
+    clearAllData,
   } = usePlan();
 
   const {
@@ -48,7 +71,58 @@ const Index = () => {
     updateBill,
     deleteBill,
     setForecastWindow,
+    loadSampleBudget,
+    clearBudgetData,
   } = useBudget();
+
+  // Check for first visit and sample data status
+  useEffect(() => {
+    if (!isLoading && !budgetLoading) {
+      if (isFirstVisit()) {
+        setShowWelcome(true);
+      } else {
+        setShowSampleBanner(hasSampleData());
+      }
+    }
+  }, [isLoading, budgetLoading]);
+
+  // Handle loading sample data
+  const handleLoadSampleData = () => {
+    const samplePlan = loadSamplePlan();
+    
+    // Link debts to bills by matching names
+    const debtIds = {
+      chaseCard: samplePlan.debts.find(d => d.name.includes('Chase'))?.id,
+      capitalOneCard: samplePlan.debts.find(d => d.name.includes('Capital One'))?.id,
+      autoLoan: samplePlan.debts.find(d => d.name.includes('Auto'))?.id,
+      studentLoan: samplePlan.debts.find(d => d.name.includes('Student'))?.id,
+    };
+    
+    loadSampleBudget(debtIds);
+    markFirstVisitComplete();
+    setShowWelcome(false);
+    setShowSampleBanner(true);
+  };
+
+  // Handle starting with empty plan
+  const handleStartEmpty = () => {
+    markFirstVisitComplete();
+    setShowWelcome(false);
+    setShowSampleBanner(false);
+  };
+
+  // Handle clearing sample data
+  const handleClearSampleData = () => {
+    setClearConfirmOpen(true);
+  };
+
+  const confirmClearSampleData = () => {
+    clearAllData();
+    clearBudgetData();
+    setSampleDataActive(false);
+    setShowSampleBanner(false);
+    setClearConfirmOpen(false);
+  };
 
   // Calculate payoff schedule whenever plan changes
   const calculationResult = useMemo(() => {
@@ -92,6 +166,11 @@ const Index = () => {
       />
 
       <main className="px-4 py-6 max-w-lg mx-auto space-y-4">
+        {/* Sample Data Banner */}
+        {showSampleBanner && (
+          <SampleDataBanner onClearSampleData={handleClearSampleData} />
+        )}
+
         {activeTab === 'debts' && activePlan && (
           <DebtsTab
             debts={activePlan.debts}
@@ -159,6 +238,9 @@ const Index = () => {
             accounts={accounts}
             bills={bills}
             forecastWindow={forecastWindow}
+            showSampleBanner={showSampleBanner}
+            onLoadSampleData={handleLoadSampleData}
+            onClearSampleData={handleClearSampleData}
           />
         )}
       </main>
@@ -170,6 +252,34 @@ const Index = () => {
       />
 
       <HelpSheet open={helpOpen} onOpenChange={setHelpOpen} />
+
+      {/* Welcome Dialog */}
+      <WelcomeDialog
+        open={showWelcome}
+        onLoadSampleData={handleLoadSampleData}
+        onStartEmpty={handleStartEmpty}
+      />
+
+      {/* Clear Sample Data Confirmation */}
+      <AlertDialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Sample Data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all sample debts, accounts, and bills. You'll start with a fresh, empty plan. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={confirmClearSampleData}
+            >
+              Clear Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
