@@ -766,15 +766,19 @@ ${sortedBills.map(bill => {
             Your CSV should have these columns:
           </p>
           <div className="bg-background rounded p-2 font-mono text-xs overflow-x-auto">
-            name,balance,apr,minPayment,customRank
+            name,balance,apr,minPayment,customRank,creditLimit
           </div>
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
             <li>• <strong>name</strong>: Debt name (text)</li>
             <li>• <strong>balance</strong>: Current balance (number)</li>
-            <li>• <strong>apr</strong>: Annual rate as decimal (e.g., 0.195 for 19.5%)</li>
+            <li>• <strong>apr</strong>: Annual rate (e.g., 19.5 or 0.195 for 19.5%)</li>
             <li>• <strong>minPayment</strong>: Minimum payment (number)</li>
             <li>• <strong>customRank</strong>: Optional priority rank (integer)</li>
+            <li>• <strong>creditLimit</strong>: Optional credit limit (number)</li>
           </ul>
+          <p className="mt-2 text-xs text-muted-foreground italic">
+            Note: creditLimit is optional. If omitted, Utilization will display N/A.
+          </p>
         </CardContent>
       </Card>
 
