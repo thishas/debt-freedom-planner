@@ -252,18 +252,18 @@ export const DebtsTab = ({
           </div>
         </div>
         
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Total Balance</p>
-            <p className="text-lg font-bold text-primary-foreground font-mono">{formatCurrency(totalBalance)}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">{formatCurrency(totalBalance)}</p>
           </div>
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Min. Payments</p>
-            <p className="text-lg font-bold text-primary-foreground font-mono">{formatCurrency(totalMinPayments)}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">{formatCurrency(totalMinPayments)}</p>
           </div>
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Active Debts</p>
-            <p className="text-lg font-bold text-primary-foreground">{activeDebtsCount}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground">{activeDebtsCount}</p>
           </div>
         </div>
       </div>
