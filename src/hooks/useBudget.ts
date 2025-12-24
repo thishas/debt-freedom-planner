@@ -93,39 +93,16 @@ export const useBudget = () => {
     }));
   }, []);
 
-  // Bulk import
-  const importAccounts = useCallback((accounts: Partial<BankAccount>[]) => {
-    const newAccounts: BankAccount[] = accounts.map(a => ({
-      id: generateId(),
-      name: a.name || 'Unnamed Account',
-      institution: a.institution || null,
-      currentBalance: a.currentBalance || 0,
-      notes: a.notes || null,
-      isPrimary: a.isPrimary || false,
-    }));
-    
+  // Bulk import - adds full account objects (already have IDs from import)
+  const importAccounts = useCallback((newAccounts: BankAccount[]) => {
     setBudgetData(prev => ({
       ...prev,
       accounts: [...prev.accounts, ...newAccounts],
     }));
   }, []);
 
-  const importBills = useCallback((bills: Partial<BillItem>[], defaultAccountId: string) => {
-    const newBills: BillItem[] = bills.map(b => ({
-      id: generateId(),
-      label: b.label || 'Unnamed Bill',
-      amount: b.amount || 0,
-      dueDay: b.dueDay || null,
-      dueDate: b.dueDate || null,
-      frequency: b.frequency || 'MONTHLY',
-      category: b.category || 'Other',
-      linkedDebtId: b.linkedDebtId || null,
-      payFromAccountId: b.payFromAccountId || defaultAccountId,
-      status: b.status || 'PLANNED',
-      autopay: b.autopay || false,
-      notes: b.notes || null,
-    }));
-    
+  // Bulk import - adds full bill objects (already have IDs from import)
+  const importBills = useCallback((newBills: BillItem[]) => {
     setBudgetData(prev => ({
       ...prev,
       bills: [...prev.bills, ...newBills],
