@@ -72,6 +72,12 @@ export interface Plan {
   debts: Debt[];
   createdAt: string;
   updatedAt: string;
+  /** Last time the plan was modified on this device (ISO timestamp) */
+  lastUpdatedAt: string;
+  /** Simple version number for tracking changes (e.g., "1.0", "1.1") */
+  version: string;
+  /** Short plan identifier for easy reference (e.g., "TBP-9F3A") */
+  planIdentifier: string;
 }
 
 export interface MonthlyDebtDetail {

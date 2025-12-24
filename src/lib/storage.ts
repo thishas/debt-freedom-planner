@@ -42,6 +42,24 @@ export const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
+/** Generate a short plan identifier like "TBP-9F3A" */
+export const generatePlanIdentifier = (): string => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars like O, 0, I, 1
+  let result = 'TBP-';
+  for (let i = 0; i < 4; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+/** Increment a version string (e.g., "1.0" -> "1.1", "1.9" -> "1.10") */
+export const incrementVersion = (currentVersion: string): string => {
+  const parts = currentVersion.split('.');
+  const major = parseInt(parts[0], 10) || 1;
+  const minor = parseInt(parts[1], 10) || 0;
+  return `${major}.${minor + 1}`;
+};
+
 export const createDefaultPlan = (): Plan => {
   const now = new Date().toISOString();
   return {
@@ -53,7 +71,57 @@ export const createDefaultPlan = (): Plan => {
     debts: [],
     createdAt: now,
     updatedAt: now,
+    lastUpdatedAt: now,
+    version: '1.0',
+    planIdentifier: generatePlanIdentifier(),
   };
+};
+
+/** Format a date for display */
+export const formatLastUpdated = (isoDate: string): string => {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+/** Export a plan to JSON with metadata */
+export const exportPlanToJSON = (plan: Plan): string => {
+  const exportData = {
+    ...plan,
+    exportedAt: new Date().toISOString(),
+    exportFormat: 'TrueBalance-v1',
+  };
+  return JSON.stringify(exportData, null, 2);
+};
+
+/** Parse a plan from JSON, validating structure */
+export const parsePlanFromJSON = (json: string): { plan: Plan | null; error?: string } => {
+  try {
+    const data = JSON.parse(json);
+    
+    // Validate required fields
+    if (!data.id || !data.name || !Array.isArray(data.debts)) {
+      return { plan: null, error: 'Invalid plan format: missing required fields' };
+    }
+    
+    // Ensure new fields exist (for backwards compatibility)
+    const plan: Plan = {
+      ...data,
+      lastUpdatedAt: data.lastUpdatedAt || data.updatedAt || new Date().toISOString(),
+      version: data.version || '1.0',
+      planIdentifier: data.planIdentifier || generatePlanIdentifier(),
+    };
+    
+    return { plan };
+  } catch (e) {
+    return { plan: null, error: 'Could not parse plan file' };
+  }
 };
 
 // CSV Import/Export
