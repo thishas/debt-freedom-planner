@@ -109,7 +109,13 @@ export const HelpSheet = ({ open, onOpenChange }: HelpSheetProps) => {
                   We welcome feedback, questions, and bug reports.
                 </p>
                 <p className="text-sm text-foreground font-medium mt-3">
-                  Email: cognitpath@gmail.com
+                  Email:{' '}
+                  <a 
+                    href="mailto:cognitpath@gmail.com?subject=TrueBalance%20Planner%20Feedback"
+                    className="text-primary hover:underline"
+                  >
+                    cognitpath@gmail.com
+                  </a>
                 </p>
                 <p className="text-xs text-muted-foreground mt-3 italic">
                   Please do not include sensitive personal or banking information in your message.
