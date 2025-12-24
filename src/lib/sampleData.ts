@@ -3,9 +3,8 @@ import { BankAccount, BillItem, BudgetData } from '@/types/budget';
 import { generateId, generatePlanIdentifier } from './storage';
 import { generateId as generateBudgetId } from './budgetStorage';
 
-// Storage keys for tracking sample data
+// Storage key for tracking sample data
 const SAMPLE_DATA_KEY = 'truebalance-has-sample-data';
-const FIRST_VISIT_KEY = 'truebalance-first-visit';
 
 /** Check if sample data is currently active */
 export const hasSampleData = (): boolean => {
@@ -26,25 +25,6 @@ export const setSampleDataActive = (active: boolean): void => {
     }
   } catch (e) {
     console.error('Failed to set sample data flag:', e);
-  }
-};
-
-/** Check if this is the user's first visit */
-export const isFirstVisit = (): boolean => {
-  try {
-    const visited = localStorage.getItem(FIRST_VISIT_KEY);
-    return visited !== 'true';
-  } catch {
-    return true;
-  }
-};
-
-/** Mark first visit as complete */
-export const markFirstVisitComplete = (): void => {
-  try {
-    localStorage.setItem(FIRST_VISIT_KEY, 'true');
-  } catch (e) {
-    console.error('Failed to mark first visit:', e);
   }
 };
 
