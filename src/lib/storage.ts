@@ -142,11 +142,32 @@ export const exportDebtsToCSV = (plan: Plan): string => {
   return [headers.join(','), ...rows].join('\n');
 };
 
+/** 
+ * Normalize APR value to decimal format (0-1 range)
+ * - If value < 1, treat as already decimal (e.g., 0.195 = 19.5%)
+ * - If value >= 1, treat as percentage and convert (e.g., 30 = 0.30)
+ */
+const normalizeApr = (rawApr: number): number => {
+  if (rawApr < 1) {
+    // Already in decimal format (e.g., 0.195 for 19.5%)
+    return rawApr;
+  }
+  // Convert from percentage to decimal (e.g., 30 -> 0.30)
+  return rawApr / 100;
+};
+
 export const parseDebtsFromCSV = (csv: string): Partial<import('@/types/debt').Debt>[] => {
   const lines = csv.trim().split('\n');
   if (lines.length < 2) return [];
   
   const debts: Partial<import('@/types/debt').Debt>[] = [];
+  
+  // Parse header to find column indices (supports flexible column order)
+  const headerLine = lines[0].toLowerCase();
+  const headers = headerLine.split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  
+  // Find column indices (creditLimit is optional)
+  const creditLimitIndex = headers.findIndex(h => h === 'creditlimit' || h === 'credit_limit');
   
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
@@ -156,13 +177,25 @@ export const parseDebtsFromCSV = (csv: string): Partial<import('@/types/debt').D
       const feeFrequencyValue = values[8]?.toUpperCase();
       const validFeeFrequency = feeFrequencyValue === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
       
+      // Parse and normalize APR
+      const rawApr = parseFloat(values[2]) || 0;
+      const normalizedApr = normalizeApr(rawApr);
+      
+      // Parse creditLimit - check by header index first, then fall back to position 5
+      let creditLimit: number | null = null;
+      if (creditLimitIndex !== -1 && values[creditLimitIndex]) {
+        creditLimit = parseFloat(values[creditLimitIndex]) || null;
+      } else if (values[5]) {
+        creditLimit = parseFloat(values[5]) || null;
+      }
+      
       debts.push({
         name: values[0] || `Debt ${i}`,
         balance: parseFloat(values[1]) || 0,
-        apr: parseFloat(values[2]) || 0,
+        apr: normalizedApr,
         minPayment: parseFloat(values[3]) || 0,
         customRank: values[4] ? parseInt(values[4]) : undefined,
-        creditLimit: values[5] ? parseFloat(values[5]) : null,
+        creditLimit,
         type: values[6] as import('@/types/debt').DebtType || null,
         feeAmount: values[7] ? parseFloat(values[7]) : null,
         feeFrequency: values[7] ? validFeeFrequency : null,
