@@ -74,18 +74,22 @@ const Index = () => {
   } = useBudget();
 
   // Check if user has any active plan data (state-based, not flag-based)
+  // This checks debts, accounts, AND bills per the specification
   const hasActiveUserData = useMemo(() => {
     if (!activePlan) return false;
     const hasDebts = activePlan.debts.length > 0;
     const hasAccounts = accounts.length > 0;
-    return hasDebts || hasAccounts;
-  }, [activePlan, accounts]);
+    const hasBills = bills.length > 0;
+    return hasDebts || hasAccounts || hasBills;
+  }, [activePlan, accounts, bills]);
 
   // State-based onboarding: show welcome when no data exists
+  // This effect responds to actual data presence, ensuring the dialog
+  // reappears after clearing without requiring a page refresh
   useEffect(() => {
     if (!isLoading && !budgetLoading) {
       if (!hasActiveUserData) {
-        // No data exists - show welcome dialog
+        // No data exists - show welcome dialog immediately
         setShowWelcome(true);
         setShowSampleBanner(false);
       } else {
@@ -97,7 +101,13 @@ const Index = () => {
   }, [isLoading, budgetLoading, hasActiveUserData]);
 
   // Handle loading sample data
+  // GUARDRAIL: Only allow if no active user data exists
   const handleLoadSampleData = () => {
+    if (hasActiveUserData) {
+      // Block: user has data, cannot overwrite with sample
+      return;
+    }
+    
     const samplePlan = loadSamplePlan();
     
     // Link debts to bills by matching names
@@ -109,7 +119,7 @@ const Index = () => {
     };
     
     loadSampleBudget(debtIds);
-    // State will auto-update via hasActiveUserData
+    // State will auto-update via hasActiveUserData effect
   };
 
   // Handle starting with empty plan
@@ -246,6 +256,7 @@ const Index = () => {
             bills={bills}
             forecastWindow={forecastWindow}
             showSampleBanner={showSampleBanner}
+            hasActiveUserData={hasActiveUserData}
             onLoadSampleData={handleLoadSampleData}
             onClearSampleData={handleClearSampleData}
           />
@@ -267,13 +278,18 @@ const Index = () => {
         onStartEmpty={handleStartEmpty}
       />
 
-      {/* Clear Sample Data Confirmation */}
+      {/* Clear Data Confirmation - works for both sample and user data */}
       <AlertDialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Clear Sample Data?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {showSampleBanner ? 'Clear Sample Data?' : 'Clear All Data?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove all sample debts, accounts, and bills. You'll start with a fresh, empty plan. This action cannot be undone.
+              {showSampleBanner 
+                ? 'This will remove all sample debts, accounts, and bills. You\'ll start with a fresh, empty plan. This action cannot be undone.'
+                : 'This will remove all your debts, accounts, and bills. You\'ll start with a fresh, empty plan. This action cannot be undone.'
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
