@@ -1,4 +1,4 @@
-import { CreditCard, Target, Calendar, BarChart3, Download, HelpCircle, Wallet, ListOrdered } from 'lucide-react';
+import { CreditCard, Target, Calendar, BarChart3, RefreshCw, HelpCircle, Wallet, ListOrdered } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type TabId = 'strategy' | 'debts' | 'payoff-order' | 'schedule' | 'charts' | 'budget' | 'export';
@@ -16,7 +16,7 @@ const tabs: { id: TabId; label: string; icon: typeof CreditCard }[] = [
   { id: 'schedule', label: 'Schedule', icon: Calendar },
   { id: 'charts', label: 'Charts', icon: BarChart3 },
   { id: 'budget', label: 'Budget', icon: Wallet },
-  { id: 'export', label: 'Export', icon: Download },
+  { id: 'export', label: 'Export', icon: RefreshCw },
 ];
 
 export const BottomNav = ({ activeTab, onTabChange, onHelpClick }: BottomNavProps) => {
