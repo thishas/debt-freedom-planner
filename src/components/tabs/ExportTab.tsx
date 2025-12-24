@@ -474,7 +474,7 @@ ${sortedBills.map(bill => {
         }));
         
         onImportAccounts?.(newAccounts);
-        const resultMsg = `Imported ${imported.length} row${imported.length !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} row${skipped !== 1 ? 's' : ''} (invalid format)` : ''}`;
+        const resultMsg = `Replaced with ${imported.length} account${imported.length !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} row${skipped !== 1 ? 's' : ''} (invalid format)` : ''}`;
         setAccountsImportResult(resultMsg);
       }
     } catch (error) {
@@ -525,7 +525,7 @@ ${sortedBills.map(bill => {
         
         // Count unlinked accounts
         const unlinkedCount = imported.filter(b => !b.payFromAccountId && b.payFromAccountName).length;
-        let resultMsg = `Imported ${imported.length} row${imported.length !== 1 ? 's' : ''}`;
+        let resultMsg = `Replaced with ${imported.length} bill${imported.length !== 1 ? 's' : ''}`;
         if (skipped > 0) {
           resultMsg += `, skipped ${skipped} row${skipped !== 1 ? 's' : ''} (invalid format)`;
         }
@@ -567,7 +567,7 @@ ${sortedBills.map(bill => {
         onImportDebts(debts);
         toast({
           title: 'Import successful',
-          description: `${debts.length} debt(s) imported.`,
+          description: `${debts.length} debt(s) imported, replacing existing debts.`,
         });
       }
     } catch (error) {
@@ -773,7 +773,7 @@ ${sortedBills.map(bill => {
             Import Debts
           </CardTitle>
           <CardDescription>
-            Import debts from a CSV file (adds to existing debts).
+            Import debts from a CSV file (this will replace all existing debts).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -812,7 +812,7 @@ ${sortedBills.map(bill => {
             Import Accounts
           </CardTitle>
           <CardDescription>
-            Import accounts from a CSV file (adds to existing accounts).
+            Import accounts from a CSV file (this will replace all existing accounts).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -856,7 +856,7 @@ ${sortedBills.map(bill => {
             Import Bills
           </CardTitle>
           <CardDescription>
-            Import bills from a CSV file (adds to existing bills).
+            Import bills from a CSV file (this will replace all existing bills).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

@@ -93,19 +93,19 @@ export const useBudget = () => {
     }));
   }, []);
 
-  // Bulk import - adds full account objects (already have IDs from import)
+  // Bulk import - replaces all existing accounts with imported ones
   const importAccounts = useCallback((newAccounts: BankAccount[]) => {
     setBudgetData(prev => ({
       ...prev,
-      accounts: [...prev.accounts, ...newAccounts],
+      accounts: newAccounts,
     }));
   }, []);
 
-  // Bulk import - adds full bill objects (already have IDs from import)
+  // Bulk import - replaces all existing bills with imported ones
   const importBills = useCallback((newBills: BillItem[]) => {
     setBudgetData(prev => ({
       ...prev,
-      bills: [...prev.bills, ...newBills],
+      bills: newBills,
     }));
   }, []);
 
