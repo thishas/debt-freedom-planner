@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Download, Upload, FileText, Table, Wallet } from 'lucide-react';
+import { Download, Upload, FileText, Table, Wallet, Clock, Shield, AlertTriangle, Info } from 'lucide-react';
 import { Plan, CalculationResult } from '@/types/debt';
 import { 
   BankAccount, 
@@ -9,16 +9,34 @@ import {
   calculateUpcomingForAccount,
   calculateAvailableAfterUpcoming,
 } from '@/types/budget';
-import { exportDebtsToCSV, exportScheduleToCSV, parseDebtsFromCSV } from '@/lib/storage';
+import { 
+  exportDebtsToCSV, 
+  exportScheduleToCSV, 
+  parseDebtsFromCSV,
+  exportPlanToJSON,
+  parsePlanFromJSON,
+  formatLastUpdated,
+} from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ExportTabProps {
   plan: Plan;
   calculationResult: CalculationResult | null;
   onImportDebts: (debts: any[]) => void;
+  onImportPlan: (plan: Plan) => void;
   accounts: BankAccount[];
   bills: BillItem[];
   forecastWindow: ForecastWindow;
@@ -35,12 +53,16 @@ export const ExportTab = ({
   plan, 
   calculationResult, 
   onImportDebts,
+  onImportPlan,
   accounts,
   bills,
   forecastWindow,
 }: ExportTabProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const planFileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+  const [importWarningOpen, setImportWarningOpen] = useState(false);
+  const [pendingImportPlan, setPendingImportPlan] = useState<Plan | null>(null);
 
   const downloadFile = (content: string, filename: string, type: string) => {
     const blob = new Blob([content], { type });
@@ -52,6 +74,75 @@ export const ExportTab = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  // Plan Export/Import
+  const handleExportPlan = () => {
+    const json = exportPlanToJSON(plan);
+    const safeName = plan.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    downloadFile(json, `${safeName}-plan.json`, 'application/json');
+    toast({
+      title: 'Plan exported',
+      description: `Your plan has been exported. Version: ${plan.version || '1.0'}`,
+    });
+  };
+
+  const handleImportPlanClick = () => {
+    planFileInputRef.current?.click();
+  };
+
+  const handlePlanFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const { plan: importedPlan, error } = parsePlanFromJSON(text);
+
+      if (error || !importedPlan) {
+        toast({
+          title: 'Import failed',
+          description: error || 'Could not parse the plan file.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Compare timestamps to warn about older plans
+      const importedDate = new Date(importedPlan.lastUpdatedAt || importedPlan.updatedAt);
+      const currentDate = new Date(plan.lastUpdatedAt || plan.updatedAt);
+
+      if (importedDate < currentDate) {
+        // Show warning - imported plan is older
+        setPendingImportPlan(importedPlan);
+        setImportWarningOpen(true);
+      } else {
+        // Import directly - imported plan is newer or same
+        confirmImportPlan(importedPlan);
+      }
+    } catch (error) {
+      toast({
+        title: 'Import failed',
+        description: 'Could not read the plan file.',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+      if (planFileInputRef.current) {
+        planFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const confirmImportPlan = (planToImport: Plan) => {
+    onImportPlan(planToImport);
+    toast({
+      title: 'Plan imported',
+      description: `Successfully imported "${planToImport.name}" with ${planToImport.debts.length} debt(s).`,
+    });
+    setImportWarningOpen(false);
+    setPendingImportPlan(null);
   };
 
   const handleExportDebts = () => {
@@ -104,6 +195,9 @@ export const ExportTab = ({
 DEBT REDUCTION SUMMARY
 ======================
 Plan: ${plan.name}
+Plan ID: ${plan.planIdentifier || 'N/A'}
+Version: ${plan.version || '1.0'}
+Last Updated: ${formatLastUpdated(plan.lastUpdatedAt || plan.updatedAt)}
 Generated: ${new Date().toLocaleDateString()}
 
 DEBTS
@@ -381,6 +475,93 @@ ${sortedBills.map(bill => {
 
   return (
     <div className="space-y-4 animate-fade-in">
+      {/* Plan Info & Manual Sync Section */}
+      <Card className="gradient-hero shadow-hero border-0">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2 text-primary-foreground">
+            <Shield className="w-5 h-5" />
+            Export & Import (Manual Sync)
+          </CardTitle>
+          <CardDescription className="text-primary-foreground/80">
+            TrueBalance Planner does not use accounts or cloud sync.
+            You control when and where your data is shared.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Plan Metadata */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 text-center">
+              <div className="text-xs text-primary-foreground/70 mb-1">Plan ID</div>
+              <div className="font-mono text-sm font-semibold text-primary-foreground">
+                {plan.planIdentifier || 'TBP-0000'}
+              </div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 text-center">
+              <div className="text-xs text-primary-foreground/70 mb-1">Version</div>
+              <div className="font-mono text-sm font-semibold text-primary-foreground">
+                v{plan.version || '1.0'}
+              </div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 text-center">
+              <div className="text-xs text-primary-foreground/70 mb-1">Debts</div>
+              <div className="text-sm font-semibold text-primary-foreground">
+                {plan.debts.length}
+              </div>
+            </div>
+          </div>
+
+          {/* Last Updated Timestamp */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 flex items-center gap-3">
+            <Clock className="w-4 h-4 text-primary-foreground/70" />
+            <div>
+              <div className="text-xs text-primary-foreground/70">Last updated on this device</div>
+              <div className="text-sm font-medium text-primary-foreground">
+                {formatLastUpdated(plan.lastUpdatedAt || plan.updatedAt)}
+              </div>
+            </div>
+          </div>
+
+          {/* Export/Import Plan Buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1 bg-white/20 text-primary-foreground border-white/30 hover:bg-white/30"
+              onClick={handleExportPlan}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Plan
+            </Button>
+            <input
+              ref={planFileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handlePlanFileChange}
+              className="hidden"
+            />
+            <Button
+              variant="secondary"
+              className="flex-1 bg-white/20 text-primary-foreground border-white/30 hover:bg-white/30"
+              onClick={handleImportPlanClick}
+              disabled={importing}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {importing ? 'Importing...' : 'Import Plan'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Privacy Notice */}
+      <Card className="shadow-soft bg-accent/10 border-accent/20">
+        <CardContent className="p-4 flex gap-3">
+          <Info className="w-5 h-5 text-accent-secondary-DEFAULT shrink-0 mt-0.5" />
+          <div className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Privacy-first approach:</strong> Your data stays on your device. 
+            Use Export to save a backup file, and Import to restore or transfer to another device.
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Export Debts Section */}
       <Card className="shadow-soft">
         <CardHeader>
@@ -472,7 +653,7 @@ ${sortedBills.map(bill => {
             Import Debts
           </CardTitle>
           <CardDescription>
-            Import debts from a CSV file.
+            Import debts from a CSV file (adds to existing debts).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -544,6 +725,53 @@ ${sortedBills.map(bill => {
           </ul>
         </CardContent>
       </Card>
+
+      {/* Import Warning Modal */}
+      <AlertDialog open={importWarningOpen} onOpenChange={setImportWarningOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertTriangle className="w-5 h-5" />
+              Older Plan Detected
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  The plan you're importing appears to be older than your current plan.
+                </p>
+                {pendingImportPlan && (
+                  <div className="bg-muted rounded-lg p-3 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Imported plan:</span>
+                      <span className="font-medium">
+                        {formatLastUpdated(pendingImportPlan.lastUpdatedAt || pendingImportPlan.updatedAt)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Your current plan:</span>
+                      <span className="font-medium">
+                        {formatLastUpdated(plan.lastUpdatedAt || plan.updatedAt)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <p className="text-amber-600 font-medium">
+                  Importing will replace your newer data with this older version.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel Import</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-amber-600 hover:bg-amber-700"
+              onClick={() => pendingImportPlan && confirmImportPlan(pendingImportPlan)}
+            >
+              Import Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

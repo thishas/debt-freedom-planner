@@ -7,6 +7,8 @@ import {
   saveActivePlanId,
   createDefaultPlan,
   generateId,
+  incrementVersion,
+  generatePlanIdentifier,
 } from '@/lib/storage';
 
 export const usePlan = () => {
@@ -66,6 +68,9 @@ export const usePlan = () => {
       debts: [],
       createdAt: now,
       updatedAt: now,
+      lastUpdatedAt: now,
+      version: '1.0',
+      planIdentifier: generatePlanIdentifier(),
     };
     
     const newPlans = [...plans, newPlan];
@@ -91,15 +96,23 @@ export const usePlan = () => {
     }
   }, [plans, activePlanId, updatePlans, switchPlan]);
 
-  // Update the active plan
-  const updateActivePlan = useCallback((updates: Partial<Plan>) => {
+  // Update the active plan (with version increment and timestamp)
+  const updateActivePlan = useCallback((updates: Partial<Plan>, incrementVer: boolean = true) => {
     if (!activePlanId) return;
     
-    const newPlans = plans.map(p => 
-      p.id === activePlanId 
-        ? { ...p, ...updates, updatedAt: new Date().toISOString() }
-        : p
-    );
+    const now = new Date().toISOString();
+    const newPlans = plans.map(p => {
+      if (p.id === activePlanId) {
+        return {
+          ...p,
+          ...updates,
+          updatedAt: now,
+          lastUpdatedAt: now,
+          version: incrementVer ? incrementVersion(p.version || '1.0') : (p.version || '1.0'),
+        };
+      }
+      return p;
+    });
     updatePlans(newPlans);
   }, [activePlanId, plans, updatePlans]);
 
@@ -167,6 +180,26 @@ export const usePlan = () => {
     updateActivePlan({ debts: [...activePlan.debts, ...newDebts] });
   }, [activePlan, updateActivePlan]);
 
+  // Import a full plan (replaces current active plan's data)
+  const importPlan = useCallback((importedPlan: Plan) => {
+    if (!activePlanId) return;
+    
+    const now = new Date().toISOString();
+    const newPlans = plans.map(p => {
+      if (p.id === activePlanId) {
+        return {
+          ...importedPlan,
+          id: activePlanId, // Keep the current plan ID
+          lastUpdatedAt: now, // Update timestamp to now
+          version: incrementVersion(importedPlan.version || '1.0'),
+          planIdentifier: importedPlan.planIdentifier || p.planIdentifier || generatePlanIdentifier(),
+        };
+      }
+      return p;
+    });
+    updatePlans(newPlans);
+  }, [activePlanId, plans, updatePlans]);
+
   return {
     plans,
     activePlan,
@@ -183,5 +216,6 @@ export const usePlan = () => {
     setMonthlyBudget,
     setBalanceDate,
     importDebts,
+    importPlan,
   };
 };

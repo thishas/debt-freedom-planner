@@ -33,6 +33,7 @@ const Index = () => {
     setMonthlyBudget,
     setBalanceDate,
     importDebts,
+    importPlan,
   } = usePlan();
 
   const {
@@ -154,6 +155,7 @@ const Index = () => {
             plan={activePlan}
             calculationResult={calculationResult}
             onImportDebts={importDebts}
+            onImportPlan={importPlan}
             accounts={accounts}
             bills={bills}
             forecastWindow={forecastWindow}
