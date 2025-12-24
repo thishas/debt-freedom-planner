@@ -458,19 +458,19 @@ export const BudgetTab = ({
           </ToggleGroup>
         </div>
         
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Total Balance</p>
-            <p className="text-lg font-bold text-primary-foreground">{formatCurrency(totalBalance)}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">{formatCurrency(totalBalance)}</p>
           </div>
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Upcoming</p>
-            <p className="text-lg font-bold text-primary-foreground">{formatCurrency(totalUpcoming)}</p>
+            <p className="text-sm md:text-lg font-bold text-primary-foreground font-mono truncate">{formatCurrency(totalUpcoming)}</p>
           </div>
-          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+          <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-2 md:p-3 min-w-0">
             <p className="text-xs text-primary-foreground/70 mb-1">Available</p>
             <p className={cn(
-              "text-lg font-bold",
+              "text-sm md:text-lg font-bold font-mono truncate",
               totalAvailable < 0 ? "text-destructive" : "text-primary-foreground"
             )}>
               {formatCurrency(totalAvailable)}
