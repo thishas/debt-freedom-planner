@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Sparkles, FileText, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Sparkles, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,13 @@ export const WelcomeDialog = ({
   onStartEmpty,
 }: WelcomeDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
+
+  // Reset loading state whenever dialog opens (critical for re-show after clear data)
+  useEffect(() => {
+    if (open) {
+      setIsLoading(false);
+    }
+  }, [open]);
 
   const handleLoadSample = async () => {
     setIsLoading(true);
