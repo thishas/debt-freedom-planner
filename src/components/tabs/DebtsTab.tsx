@@ -209,15 +209,15 @@ export const DebtsTab = ({
   };
 
   const UtilizationBar = ({ rate }: { rate: number | null }) => {
-    if (rate === null) return null;
-    const color = getUtilizationColor(rate);
+    const color = rate !== null ? getUtilizationColor(rate) : null;
     
     return (
       <div className="flex items-center gap-2">
         <Progress 
-          value={rate} 
+          value={rate ?? 0} 
           className={cn(
             "h-2 flex-1",
+            rate === null && '[&>div]:bg-muted',
             color === 'green' && '[&>div]:bg-emerald-500',
             color === 'yellow' && '[&>div]:bg-amber-500',
             color === 'red' && '[&>div]:bg-red-500'
@@ -225,11 +225,12 @@ export const DebtsTab = ({
         />
         <span className={cn(
           "text-xs font-mono font-medium",
+          rate === null && 'text-muted-foreground',
           color === 'green' && 'text-emerald-600',
           color === 'yellow' && 'text-amber-600',
           color === 'red' && 'text-red-600'
         )}>
-          {rate.toFixed(1)}%
+          {rate !== null ? `${rate.toFixed(1)}%` : 'N/A'}
         </span>
       </div>
     );
@@ -340,11 +341,9 @@ export const DebtsTab = ({
                     <div>
                       <p className="text-muted-foreground text-xs">Balance</p>
                       <p className="font-semibold font-mono">{formatCurrency(debt.balance)}</p>
-                      {availableBalance !== null && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Avail: {formatCurrency(availableBalance)}
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Avail: {availableBalance !== null ? formatCurrency(availableBalance) : '—'}
+                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">APR</p>
@@ -356,13 +355,11 @@ export const DebtsTab = ({
                     </div>
                   </div>
 
-                  {/* Utilization bar for credit limit debts */}
-                  {utilization !== null && (
-                    <div className="mt-3">
-                      <p className="text-xs text-muted-foreground mb-1">Utilization</p>
-                      <UtilizationBar rate={utilization} />
-                    </div>
-                  )}
+                  {/* Utilization bar - always visible */}
+                  <div className="mt-3">
+                    <p className="text-xs text-muted-foreground mb-1">Utilization</p>
+                    <UtilizationBar rate={utilization} />
+                  </div>
 
                   <div className="mt-2 pt-2 border-t border-border">
                     <div className="flex items-center justify-between text-xs">
