@@ -49,7 +49,7 @@ export const BottomNav = ({ activeTab, onTabChange, onHelpClick }: BottomNavProp
           className="flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all duration-200 min-w-[48px] touch-manipulation text-muted-foreground hover:text-foreground hover:bg-muted"
         >
           <HelpCircle className="w-5 h-5 mb-0.5" strokeWidth={2} />
-          <span className="text-[10px] font-medium leading-tight">Help</span>
+          <span className="text-[10px] font-medium leading-tight">About</span>
         </button>
       </div>
     </nav>
