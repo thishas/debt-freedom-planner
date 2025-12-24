@@ -1,4 +1,4 @@
-import { Info, Shield, Mail, Copyright, TrendingDown, Zap, ListOrdered, Ban, Star } from 'lucide-react';
+import { Info, Shield, Mail, Copyright } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -13,39 +13,6 @@ interface HelpSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const strategies = [
-  {
-    icon: TrendingDown,
-    name: 'Snowball (Lowest Balance)',
-    description:
-      'Pay off your smallest debt first. When that\'s paid off, roll that payment into the next smallest debt. This method provides psychological wins to keep you motivated.',
-  },
-  {
-    icon: Zap,
-    name: 'Avalanche (Highest APR)',
-    description:
-      'Pay off your highest interest rate debt first. This mathematically minimizes the total interest you pay over time.',
-  },
-  {
-    icon: ListOrdered,
-    name: 'Order Entered',
-    description:
-      'Pay off debts in the order you added them to the list. Useful when you have a specific priority in mind.',
-  },
-  {
-    icon: Ban,
-    name: 'No Snowball',
-    description:
-      'Pay only the minimum payment on each debt with no redistribution of freed-up payments.',
-  },
-  {
-    icon: Star,
-    name: 'Custom Order',
-    description:
-      'Set your own priority using custom rank values. Debts with ranks are paid first.',
-  },
-];
 
 export const HelpSheet = ({ open, onOpenChange }: HelpSheetProps) => {
   return (
@@ -147,29 +114,6 @@ export const HelpSheet = ({ open, onOpenChange }: HelpSheetProps) => {
                 <p className="text-xs text-muted-foreground mt-3 italic">
                   Please do not include sensitive personal or banking information in your message.
                 </p>
-              </div>
-            </section>
-
-            <Separator />
-
-            {/* Payoff Strategies */}
-            <section>
-              <h3 className="font-semibold text-sm text-primary mb-3">Payoff Strategies</h3>
-              <div className="space-y-3">
-                {strategies.map((strategy) => (
-                  <div
-                    key={strategy.name}
-                    className="bg-secondary/30 rounded-lg p-3"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <strategy.icon className="w-4 h-4 text-primary" />
-                      <h4 className="font-medium text-sm">{strategy.name}</h4>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {strategy.description}
-                    </p>
-                  </div>
-                ))}
               </div>
             </section>
 
