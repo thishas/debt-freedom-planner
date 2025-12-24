@@ -473,7 +473,7 @@ ${sortedBills.map(bill => {
   };
 
   const downloadTemplate = () => {
-    const template = 'name,balance,apr,minPayment,customRank\n"Credit Card",5000,0.195,150,1\n"Auto Loan",15000,0.059,350,2';
+    const template = 'name,balance,apr,minPayment,customRank,creditLimit\n"Credit Card",5000,0.195,150,1,10000\n"Auto Loan",15000,0.059,350,2,';
     downloadFile(template, 'debt-import-template.csv', 'text/csv');
     toast({
       title: 'Template downloaded',
