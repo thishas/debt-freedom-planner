@@ -45,6 +45,26 @@ export const HelpSheet = ({ open, onOpenChange }: HelpSheetProps) => {
               </div>
             </section>
 
+            {/* User Guide Section */}
+            <section>
+              <h3 className="font-semibold text-sm text-primary mb-3">User Guide</h3>
+              <div className="bg-secondary/30 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Access the full TrueBalance Planner User Guide for detailed walkthroughs, explanations, and examples.
+                </p>
+                <p className="text-sm mt-3">
+                  <a 
+                    href="https://truebalance.thisha.net/user-guide"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    View User Guide
+                  </a>
+                </p>
+              </div>
+            </section>
+
             <Separator />
 
             {/* Privacy & Data Use Section */}
