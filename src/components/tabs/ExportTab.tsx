@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Download, Upload, FileText, Table, Wallet, Clock, Shield, AlertTriangle, Info, Sparkles, Trash2 } from 'lucide-react';
+import { track } from '@/lib/analytics';
 import { Plan, CalculationResult } from '@/types/debt';
 import { 
   BankAccount, 
@@ -97,8 +98,9 @@ export const ExportTab = ({
     URL.revokeObjectURL(url);
   };
 
-  // Plan Export/Import
+  // Plan Export/Import - with Umami tracking
   const handleExportPlan = () => {
+    track('export_clicked', { type: 'plan_json' });
     const json = exportPlanToJSON(plan);
     const safeName = plan.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
     downloadFile(json, `${safeName}-plan.json`, 'application/json');
@@ -176,6 +178,7 @@ export const ExportTab = ({
       return;
     }
 
+    track('export_clicked', { type: 'debts_csv' });
     const csv = exportDebtsToCSV(plan);
     downloadFile(csv, `${plan.name}-debts.csv`, 'text/csv');
     toast({
@@ -194,6 +197,7 @@ export const ExportTab = ({
       return;
     }
 
+    track('export_clicked', { type: 'schedule_csv' });
     const csv = exportScheduleToCSV(calculationResult.schedule);
     downloadFile(csv, `${plan.name}-schedule.csv`, 'text/csv');
     toast({
@@ -211,6 +215,8 @@ export const ExportTab = ({
       });
       return;
     }
+
+    track('export_clicked', { type: 'summary_txt' });
 
     const summary = `
 DEBT REDUCTION SUMMARY
