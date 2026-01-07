@@ -30,10 +30,30 @@ export const WelcomeDialog = ({
   }, [open]);
 
   const handleLoadSample = async () => {
+    // Track Umami event
+    if (typeof window !== 'undefined' && (window as any).umami) {
+      (window as any).umami.track("load_sample_plan", {
+        source: "planner",
+        intent: "explore"
+      });
+    }
+    
     setIsLoading(true);
     // Small delay for feedback
     await new Promise(r => setTimeout(r, 300));
     onLoadSampleData();
+  };
+
+  const handleStartEmpty = () => {
+    // Track Umami event
+    if (typeof window !== 'undefined' && (window as any).umami) {
+      (window as any).umami.track("start_empty_plan", {
+        source: "planner",
+        intent: "create"
+      });
+    }
+    
+    onStartEmpty();
   };
 
   return (
@@ -76,7 +96,7 @@ export const WelcomeDialog = ({
           <Button
             variant="outline"
             className="w-full h-auto py-4 flex flex-col items-start gap-1"
-            onClick={onStartEmpty}
+            onClick={handleStartEmpty}
             disabled={isLoading}
           >
             <div className="flex items-center gap-2 font-semibold">
