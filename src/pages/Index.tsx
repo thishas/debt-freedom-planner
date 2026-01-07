@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { usePlan } from '@/hooks/usePlan';
 import { useBudget } from '@/hooks/useBudget';
 import { calculatePayoffSchedule, validateMonthlyBudget } from '@/lib/calculations';
 import { parseISO } from 'date-fns';
 import { Header } from '@/components/Header';
 import { BottomNav, TabId } from '@/components/BottomNav';
+import { track } from '@/lib/analytics';
 import { DebtsTab } from '@/components/tabs/DebtsTab';
 import { StrategyTab } from '@/components/tabs/StrategyTab';
 import { PayoffOrderTab } from '@/components/tabs/PayoffOrderTab';
@@ -31,12 +32,32 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+// Map TabId to Umami event names
+const TAB_EVENT_MAP: Record<TabId, string> = {
+  strategy: 'tab_opened_strategy',
+  debts: 'tab_opened_debts',
+  'payoff-order': 'tab_opened_payments', // "payments" per spec, maps to payoff-order
+  schedule: 'tab_opened_dashboard',       // schedule acts as the main dashboard view
+  charts: 'tab_opened_charts',
+  budget: 'tab_opened_budget',
+  export: 'tab_opened_export',
+};
+
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('strategy');
   const [helpOpen, setHelpOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showSampleBanner, setShowSampleBanner] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+
+  // Tab change handler with Umami tracking
+  const handleTabChange = useCallback((tab: TabId) => {
+    setActiveTab(tab);
+    const eventName = TAB_EVENT_MAP[tab];
+    if (eventName) {
+      track(eventName, { source: 'tabbar' });
+    }
+  }, []);
 
   const {
     plans,
@@ -136,6 +157,7 @@ const Index = () => {
   };
 
   const confirmClearSampleData = () => {
+    track('reset_clicked', { source: 'clear_dialog' });
     clearAllData();
     clearBudgetData();
     setSampleDataActive(false);
@@ -269,7 +291,7 @@ const Index = () => {
 
       <BottomNav
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         onHelpClick={() => setHelpOpen(true)}
       />
 

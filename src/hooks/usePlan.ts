@@ -11,6 +11,7 @@ import {
   generatePlanIdentifier,
 } from '@/lib/storage';
 import { generateSamplePlan, setSampleDataActive } from '@/lib/sampleData';
+import { track } from '@/lib/analytics';
 
 export const usePlan = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -117,7 +118,7 @@ export const usePlan = () => {
     updatePlans(newPlans);
   }, [activePlanId, plans, updatePlans]);
 
-  // Debt CRUD operations
+  // Debt CRUD operations - with Umami tracking
   const addDebt = useCallback((debt: Omit<Debt, 'id' | 'active'>) => {
     if (!activePlan) return;
     
@@ -128,6 +129,7 @@ export const usePlan = () => {
     };
     
     updateActivePlan({ debts: [...activePlan.debts, newDebt] });
+    track('debt_added', { source: 'planner' });
   }, [activePlan, updateActivePlan]);
 
   const updateDebt = useCallback((debtId: string, updates: Partial<Debt>) => {
@@ -151,10 +153,18 @@ export const usePlan = () => {
   const deleteDebt = useCallback((debtId: string) => {
     if (!activePlan) return;
     updateActivePlan({ debts: activePlan.debts.filter(d => d.id !== debtId) });
+    track('debt_deleted', { source: 'planner' });
   }, [activePlan, updateActivePlan]);
 
+  // Strategy change - with Umami tracking
   const setStrategy = useCallback((strategy: Strategy) => {
     updateActivePlan({ strategy });
+    // Track specific strategy type
+    if (strategy === 'SNOWBALL_LOWEST_BALANCE') {
+      track('strategy_changed_snowball', { source: 'planner' });
+    } else if (strategy === 'AVALANCHE_HIGHEST_APR') {
+      track('strategy_changed_avalanche', { source: 'planner' });
+    }
   }, [updateActivePlan]);
 
   const setMonthlyBudget = useCallback((monthlyBudget: number) => {
