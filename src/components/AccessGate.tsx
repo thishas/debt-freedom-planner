@@ -24,6 +24,23 @@ export const AccessGate = ({ children }: AccessGateProps) => {
     return flag === "1";
   }, []);
 
+  // Handle signup handoff from landing page (?signup=1)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    
+    if (params.get("signup") === "1") {
+      // Set the localStorage flag
+      localStorage.setItem(STORAGE_KEY, "1");
+      track("app_signup_handoff_received");
+      
+      // Remove only the signup param, keep others
+      params.delete("signup");
+      const newSearch = params.toString();
+      const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, []);
+
   useEffect(() => {
     const accessGranted = checkAccess();
     setHasAccess(accessGranted);
